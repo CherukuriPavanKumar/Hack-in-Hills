@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from apps.api.core.auth import (
     Role,
     get_current_role,
+    require_role,
     sanitize_policy_for_role,
 )
 from apps.api.core.database import get_db
@@ -66,16 +67,12 @@ def list_policies(
 def create_policy(
     req: PolicyCreate,
     db: Session = Depends(get_db),
-    role: Role = Depends(get_current_role),
+    role: Role = Depends(require_role(Role.OPERATOR, Role.BLUE_TEAM)),
 ):
     """
     Submit and validate a new immutable versioned defense policy.
+    Restricted strictly to Operator and Blue Team roles.
     """
-    if role == Role.RED_TEAM:
-        raise HTTPException(
-            status_code=403,
-            detail="Red Team members are forbidden from authoring Blue Team defense policies.",
-        )
 
     policy_id = f"policy_{uuid.uuid4().hex[:8]}"
     p_hash = compute_policy_hash(req.rules_json)
@@ -86,7 +83,7 @@ def create_policy(
         version=req.version,
         rules_json=req.rules_json,
         created_by=req.created_by or role.value,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         policy_hash=p_hash,
     )
     db.add(new_policy)

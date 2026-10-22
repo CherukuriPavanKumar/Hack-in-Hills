@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from apps.api.core.auth import (
     Role,
     get_current_role,
+    require_role,
     sanitize_test_case_for_role,
 )
 from apps.api.core.database import get_db
@@ -53,10 +54,11 @@ router = APIRouter(prefix="/runs", tags=["Runs"])
 def create_run(
     req: RunCreate,
     db: Session = Depends(get_db),
-    role: Role = Depends(get_current_role),
+    role: Role = Depends(require_role(Role.OPERATOR, Role.RED_TEAM)),
 ):
     """
     Validate config and create a new run with unique ID and frozen metadata.
+    Restricted to Operator and Red Team roles.
     """
     suite_data = get_suite(req.suite_id)
     suite_hash = compute_suite_hash(suite_data)
@@ -127,10 +129,12 @@ async def start_run(
     run_id: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    role: Role = Depends(require_role(Role.OPERATOR, Role.RED_TEAM)),
 ):
     """
     Start lifecycle: transitions through VALIDATING -> PROVISIONING ->
     ISOLATION_CHECK -> RUNNING -> EVALUATING -> VERIFYING -> COMPLETED.
+    Restricted to Operator and Red Team roles.
     """
     run = db.query(TestRun).filter(TestRun.id == run_id).first()
     if not run:
@@ -193,6 +197,7 @@ def get_run(
 def get_run_events(
     run_id: str,
     db: Session = Depends(get_db),
+    role: Role = Depends(get_current_role),
 ):
     """Fetch ordered timeline events forming the SHA-256 hash chain."""
     run = db.query(TestRun).filter(TestRun.id == run_id).first()
@@ -212,6 +217,7 @@ def get_run_events(
 def verify_run_chain(
     run_id: str,
     db: Session = Depends(get_db),
+    role: Role = Depends(get_current_role),
 ):
     """
     Independently recompute the audit hash chain from genesis to head
@@ -248,7 +254,7 @@ def verify_run_chain(
         total_events=len(event_dicts),
         mismatch_seq=failing_seq,
         reason=reason or "Full SHA-256 hash chain verified successfully from genesis.",
-        verified_at=datetime.datetime.utcnow().isoformat() + "Z",
+        verified_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
     )
 
 
@@ -257,12 +263,14 @@ def tamper_drill(
     run_id: str,
     tamper_seq: int = Query(default=2, ge=1),
     db: Session = Depends(get_db),
+    role: Role = Depends(require_role(Role.OPERATOR, Role.AUDITOR)),
 ):
     """
     Controlled Tamper-Evident Ledger Demo (WOW Moment #2).
     Copies stored events into an in-memory disposable sequence,
     modifies one event, and runs the independent verifier.
     The real stored ledger is NEVER corrupted.
+    Restricted to Operator and Auditor roles.
     """
     events = (
         db.query(AuditEvent)
@@ -339,6 +347,7 @@ def get_run_report(
     run_id: str,
     format: str = Query(default="json", pattern="^(json|markdown)$"),
     db: Session = Depends(get_db),
+    role: Role = Depends(get_current_role),
 ):
     """
     Generate and return executive report (JSON or downloadable Markdown).
@@ -387,7 +396,7 @@ def get_run_report(
     # Markdown export format
     md_lines = [
         f"# BAYORA Executive Audit Report — Run `{run.id}`",
-        f"**Generated**: {datetime.datetime.utcnow().isoformat()}Z  ",
+        f"**Generated**: {datetime.datetime.now(datetime.timezone.utc).isoformat()}  ",
         f"**Run Status**: `{run.status}` | **Integrity Status**: `{report.integrity_status}`  ",
         "",
         "## 1. Tested Configuration & Pinned Versions",

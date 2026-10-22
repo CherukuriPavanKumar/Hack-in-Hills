@@ -16,8 +16,11 @@ from services.target_model.target_adapter import (
 from workers.blue_policy.default_policies import DEFAULT_POLICIES
 from workers.red_runner.benchmark_suites import get_suite
 
+from apps.api.core.auth import Role, create_signed_token
+
 init_db_and_seed()
 client = TestClient(app)
+client.headers.update({"Authorization": f"Bearer {create_signed_token(Role.OPERATOR)}"})
 
 
 def test_t1_red_to_blue_network_isolation():

@@ -72,7 +72,7 @@ def append_audit_event(
         seq = last_event.seq + 1
         prev_hash = last_event.event_hash
 
-    timestamp_str = datetime.datetime.utcnow().isoformat() + "Z"
+    timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     event_payload = {
         "run_id": run_id,
@@ -117,7 +117,7 @@ class Orchestrator:
         try:
             # 1. VALIDATING & CONFIG FREEZE
             run.status = "VALIDATING"
-            run.started_at = datetime.datetime.utcnow()
+            run.started_at = datetime.datetime.now(datetime.timezone.utc)
             db.commit()
 
             append_audit_event(
@@ -225,7 +225,7 @@ class Orchestrator:
             if not isolation_passed:
                 run.status = "ISOLATION_FAILED"
                 run.error_reason = "Critical security isolation boundary probe failed. Evaluation aborted."
-                run.ended_at = datetime.datetime.utcnow()
+                run.ended_at = datetime.datetime.now(datetime.timezone.utc)
                 db.commit()
                 append_audit_event(
                     db,
@@ -353,7 +353,7 @@ class Orchestrator:
                     verdict=verdict,
                     rationale_code=rationale,
                     latency_ms=case_latency,
-                    executed_at=datetime.datetime.utcnow(),
+                    executed_at=datetime.datetime.now(datetime.timezone.utc),
                 )
                 db.add(tc_result)
                 db.commit()
@@ -413,7 +413,7 @@ class Orchestrator:
 
             # 6. COMPLETED & REPORT GENERATION
             run.status = "COMPLETED"
-            run.ended_at = datetime.datetime.utcnow()
+            run.ended_at = datetime.datetime.now(datetime.timezone.utc)
 
             # Latency metrics
             p50_latency = round(statistics.median(latencies), 2) if latencies else 0.0
@@ -462,7 +462,7 @@ class Orchestrator:
                         "description": "The SHA-256 hash chain is tamper-evident against local record alteration, but strong enterprise non-repudiation requires periodically anchoring the final block hash to an external immutable ledger or HSM.",
                     },
                 ],
-                exported_at=datetime.datetime.utcnow(),
+                exported_at=datetime.datetime.now(datetime.timezone.utc),
             )
             db.add(report)
             db.commit()
@@ -478,7 +478,7 @@ class Orchestrator:
         except Exception as e:
             run.status = "FAILED"
             run.error_reason = f"Unhandled orchestration exception: {str(e)}"
-            run.ended_at = datetime.datetime.utcnow()
+            run.ended_at = datetime.datetime.now(datetime.timezone.utc)
             db.commit()
             append_audit_event(
                 db,

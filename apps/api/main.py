@@ -14,7 +14,7 @@ from apps.api.models.models import (
     TestCaseResult,
     TestRun,
 )
-from apps.api.routes import diff, health, policies, probes, runs
+from apps.api.routes import auth, diff, health, policies, probes, runs
 from services.orchestrator import append_audit_event
 from workers.blue_policy.default_policies import (
     DEFAULT_POLICIES,
@@ -213,6 +213,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(health.router, prefix=settings.API_PREFIX)
 app.include_router(runs.router, prefix=settings.API_PREFIX)
 app.include_router(policies.router, prefix=settings.API_PREFIX)

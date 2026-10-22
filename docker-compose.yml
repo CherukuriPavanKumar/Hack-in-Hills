@@ -1,5 +1,3 @@
-version: "3.8"
-
 networks:
   control-net:
     driver: bridge
@@ -48,6 +46,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    sysctls:
+      - net.ipv4.ip_forward=0
     environment:
       DATABASE_URL: postgresql://bayora:bayora_secret@db:5432/bayora
       GATEWAY_URL: http://gateway:8002

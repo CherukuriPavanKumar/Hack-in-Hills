@@ -19,6 +19,10 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
+def get_utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 class TestRun(Base):
     __tablename__ = "test_runs"
 
@@ -42,7 +46,7 @@ class TestRun(Base):
     timeout_ms = Column(Integer, default=5000)
     clean_context_enforced = Column(Boolean, default=True)
     
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
     
@@ -64,7 +68,7 @@ class PolicyVersion(Base):
     version = Column(String(32), nullable=False)
     rules_json = Column(JSON, nullable=False, default=dict)
     created_by = Column(String(64), nullable=False, default="blue_team")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
     policy_hash = Column(String(64), nullable=False)
 
 
@@ -88,7 +92,7 @@ class TestCaseResult(Base):
     verdict = Column(String(32), nullable=False)  # PASS, FAIL, BLOCKED_BY_GATEWAY, INCONCLUSIVE
     rationale_code = Column(String(128), nullable=True)
     latency_ms = Column(Float, default=0.0)
-    executed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    executed_at = Column(DateTime, default=get_utc_now)
 
     run = relationship("TestRun", back_populates="test_cases")
 
@@ -121,7 +125,7 @@ class BoundaryProbe(Base):
     observed = Column(String(16), nullable=False)  # DENY, ALLOW, ERROR
     verdict = Column(String(16), nullable=False)   # PASS, FAIL
     evidence_ref = Column(Text, nullable=True)
-    executed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    executed_at = Column(DateTime, default=get_utc_now)
 
     run = relationship("TestRun", back_populates="probes")
 
@@ -134,6 +138,6 @@ class Report(Base):
     summary_json = Column(JSON, nullable=False, default=dict)
     integrity_status = Column(String(32), nullable=False)  # VERIFIED, TAMPERED, UNVERIFIED
     residual_risks = Column(JSON, nullable=False, default=list)
-    exported_at = Column(DateTime, default=datetime.datetime.utcnow)
+    exported_at = Column(DateTime, default=get_utc_now)
 
     run = relationship("TestRun", back_populates="reports")

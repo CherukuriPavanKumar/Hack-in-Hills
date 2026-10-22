@@ -3,9 +3,12 @@ from fastapi.testclient import TestClient
 from apps.api.main import app, init_db_and_seed
 from apps.api.core.hash_chain import GENESIS_HASH, verify_chain
 
+from apps.api.core.auth import Role, create_signed_token
+
 # Initialize database tables and seed data for tests
 init_db_and_seed()
 client = TestClient(app)
+client.headers.update({"Authorization": f"Bearer {create_signed_token(Role.OPERATOR)}"})
 
 
 def test_health_endpoint():
@@ -40,14 +43,22 @@ def test_list_policies():
 
 def test_role_based_policy_redaction():
     # As Red Team, blue defense rules must be redacted
-    res_red = client.get("/api/policies", headers={"X-Bayora-Role": "red_team"})
+    red_token = create_signed_token(Role.RED_TEAM)
+    res_red = client.get(
+        "/api/policies",
+        headers={"Authorization": f"Bearer {red_token}", "X-Bayora-Role": "red_team"},
+    )
     assert res_red.status_code == 200
     policies_red = res_red.json()
     for p in policies_red:
         assert p["rules_json"].get("redacted") is True
 
     # As Operator or Blue Team, rules must be visible
-    res_op = client.get("/api/policies", headers={"X-Bayora-Role": "operator"})
+    op_token = create_signed_token(Role.OPERATOR)
+    res_op = client.get(
+        "/api/policies",
+        headers={"Authorization": f"Bearer {op_token}", "X-Bayora-Role": "operator"},
+    )
     assert res_op.status_code == 200
     policies_op = res_op.json()
     baseline = next(p for p in policies_op if p["id"] == "baseline-guard-v1.0")

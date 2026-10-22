@@ -17,5 +17,5 @@ ENV RUNNING_IN_DOCKER=true
 
 EXPOSE 8004
 
-# Run probe and idle safely
-CMD ["python3", "-c", "import time; print('Red Runner active on red-net'); time.sleep(86400)"]
+# Run in-container probe server
+CMD ["uvicorn", "workers.red_runner.server:app", "--host", "0.0.0.0", "--port", "8004"]

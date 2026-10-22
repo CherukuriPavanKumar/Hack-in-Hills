@@ -11,7 +11,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": "bayora-control-plane",
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "in_docker": bool(os.getenv("RUNNING_IN_DOCKER", False)),
     }
 

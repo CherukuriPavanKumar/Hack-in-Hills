@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # Security & Execution limits
     DEFAULT_REQUEST_BUDGET: int = 20
     DEFAULT_TIMEOUT_MS: int = 5000
+    AUTH_SECRET_KEY: str = os.getenv("AUTH_SECRET_KEY", "bayora_sec_hmac_key_prod_2026_isolated")
+    TOKEN_EXPIRY_SECONDS: int = 86400
 
 
 settings = Settings()

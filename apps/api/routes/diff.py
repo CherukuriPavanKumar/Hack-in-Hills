@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from apps.api.core.auth import Role, get_current_role
 from apps.api.core.database import get_db
 from apps.api.models.models import TestRun
 from apps.api.schemas.schemas import RunDiffResponse
@@ -14,6 +15,7 @@ def compare_runs(
     run_a_id: str = Query(..., description="First run ID"),
     run_b_id: str = Query(..., description="Second run ID"),
     db: Session = Depends(get_db),
+    role: Role = Depends(get_current_role),
 ):
     """
     Compare two runs side-by-side to demonstrate reproducibility and
