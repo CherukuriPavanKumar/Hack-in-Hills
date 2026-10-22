@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ShieldCheck, Flame, Database, Lock, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
+import { Database, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { TestRun, AuditEvent, fetchRuns, fetchRunEvents } from "@/lib/api";
 import { useRole } from "@/lib/RoleContext";
 import { HashChainViewer } from "@/components/HashChainViewer";
@@ -50,28 +50,29 @@ function IntegrityContent() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-edge pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <h1 className="text-2xl font-extrabold text-white tracking-wide">
-              Evidence Integrity Center & Cryptographic Hash Chain
+            <span className="w-2 h-2 rounded-full bg-signal-emerald"></span>
+            <h1 className="text-lg font-semibold text-slate-100 tracking-tight">
+              Cryptographic Audit Chain & Tamper Evidence
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Proves the authenticity and tamper-evident lineage of all evaluation results, access decisions, and boundary checks.
+            Canonical SHA-256 state ledger linking each evaluation step, policy decision, and telemetry assertion.
           </p>
         </div>
 
         {/* Run Selector */}
-        <div className="flex items-center space-x-3">
-          <span className="text-xs font-mono text-slate-400">TARGET RUN:</span>
+        <div className="flex items-center space-x-2">
+          <label htmlFor="targetRunSelect" className="text-xs font-mono text-slate-400">Target run:</label>
           <select
+            id="targetRunSelect"
             value={selectedRunId || ""}
             onChange={(e) => handleSelectRun(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+            className="bg-surface border border-edge rounded px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-signal-blue"
           >
             {runs.map((r) => (
               <option key={r.id} value={r.id}>
@@ -87,32 +88,34 @@ function IntegrityContent() {
         <HashChainViewer runId={selectedRunId} initialEvents={events} />
       )}
 
-      {/* Educational Walkthrough for Judges */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 backdrop-blur-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono flex items-center space-x-2">
-          <Database className="w-4 h-4 text-cyan-400" />
-          <span>How the Bayora SHA-256 Audit Chain Operates</span>
-        </h3>
+      {/* Educational Walkthrough */}
+      <div className="bg-surface border border-edge rounded-lg p-5 space-y-4">
+        <div className="flex items-center space-x-2">
+          <Database className="w-4 h-4 text-slate-400" />
+          <h2 className="text-xs font-semibold text-slate-200 font-mono">
+            Cryptographic ledger specifications
+          </h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-          <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
-            <div className="text-cyan-400 font-bold">1. Canonical Serialization</div>
-            <p className="text-slate-400 text-[11px] leading-relaxed">
-              Every audit event is normalized to canonical JSON with deterministically sorted keys, no whitespace padding, and the event&apos;s own hash field excluded.
+          <div className="p-3.5 rounded bg-canvas border border-edge space-y-1.5">
+            <div className="text-slate-200 font-medium text-xs">1. Canonical serialization</div>
+            <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
+              Every audit event is normalized to canonical JSON with deterministically sorted keys, compact separators without whitespace, and the record's own hash key excluded prior to hashing.
             </p>
           </div>
 
-          <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
-            <div className="text-cyan-400 font-bold">2. Cryptographic Linkage</div>
-            <p className="text-slate-400 text-[11px] leading-relaxed">
-              <code>event_hash = SHA256(prev_hash || &apos;:&apos; || canonical_json)</code>. The initial event anchors to a fixed Genesis hash (64 zeros).
+          <div className="p-3.5 rounded bg-canvas border border-edge space-y-1.5">
+            <div className="text-slate-200 font-medium text-xs">2. Cryptographic linkage</div>
+            <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
+              <code className="text-[10px] text-slate-300 font-mono">event_hash = SHA256(prev_hash || ':' || canonical_json)</code>. The genesis block links to 64 consecutive zeros.
             </p>
           </div>
 
-          <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
-            <div className="text-cyan-400 font-bold">3. Independent Verification</div>
-            <p className="text-slate-400 text-[11px] leading-relaxed">
-              The verifier recalculates each block from Genesis to Head. Modifying even 1 byte in a past event invalidates all downstream blocks immediately.
+          <div className="p-3.5 rounded bg-canvas border border-edge space-y-1.5">
+            <div className="text-slate-200 font-medium text-xs">3. Independent verification</div>
+            <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
+              The verifier recomputes hashes from Genesis to Head sequentially. Any byte altered in transit or at rest invalidates all subsequent child digests.
             </p>
           </div>
         </div>
@@ -125,7 +128,7 @@ function IntegrityContent() {
 
 export default function IntegrityCenterPage() {
   return (
-    <Suspense fallback={<div className="text-xs font-mono text-slate-500">Loading Integrity Center...</div>}>
+    <Suspense fallback={<div className="text-xs font-mono text-slate-500 py-6">Loading integrity center...</div>}>
       <IntegrityContent />
     </Suspense>
   );

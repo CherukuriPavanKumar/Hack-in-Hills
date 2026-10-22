@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText, Download, ShieldCheck, AlertTriangle, CheckCircle2, Terminal, Copy, Check } from "lucide-react";
+import { FileText, Download, ShieldCheck, AlertTriangle, CheckCircle2, Terminal } from "lucide-react";
 import { TestRun, RunReport, fetchRuns, fetchRunReport } from "@/lib/api";
 import { useRole } from "@/lib/RoleContext";
 
@@ -70,27 +70,29 @@ function ReportsContent() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-edge pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
-            <h1 className="text-2xl font-extrabold text-white tracking-wide">
-              Executive Audit & Findings Reports
+            <FileText className="w-4 h-4 text-slate-300" />
+            <h1 className="text-lg font-semibold text-slate-100 tracking-tight">
+              Evaluation Audit & Findings Reports
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Standardized evaluation reports with cryptographic integrity proofs, boundary outcomes, and explicit residual risks.
+            Standardized evaluation dossiers containing cryptographic proof manifests, isolation verification, and residual security boundaries.
           </p>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          <label htmlFor="reportRunSelect" className="text-xs font-mono text-slate-400">Run:</label>
           <select
+            id="reportRunSelect"
             value={selectedRunId || ""}
             onChange={(e) => handleSelectRun(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+            className="bg-surface border border-edge rounded px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-signal-blue"
           >
             {runs.map((r) => (
               <option key={r.id} value={r.id}>
@@ -102,99 +104,99 @@ function ReportsContent() {
           <button
             onClick={handleDownloadJson}
             disabled={!report}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition-colors disabled:opacity-50"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded bg-surface hover:bg-slate-800 border border-edge text-slate-300 text-xs font-mono transition-colors disabled:opacity-40"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>JSON</span>
           </button>
 
           <button
             onClick={handleDownloadMarkdown}
             disabled={!report}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono transition-colors shadow-md disabled:opacity-50"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded bg-signal-blue hover:bg-blue-600 text-white text-xs font-mono transition-colors disabled:opacity-40"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Markdown</span>
           </button>
         </div>
       </div>
 
       {report && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm space-y-8 max-w-5xl mx-auto">
+        <div className="bg-surface border border-edge rounded-lg p-6 space-y-6 max-w-5xl mx-auto">
           {/* Report Title Banner */}
-          <div className="border-b border-slate-800 pb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="border-b border-edge pb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                OFFICIAL EVALUATION AUDIT REPORT
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-canvas border border-edge text-slate-300">
+                Evaluation audit dossier
               </span>
-              <h2 className="text-xl font-bold text-white mt-2 font-mono">Run ID: {report.run_id}</h2>
-              <div className="text-xs text-slate-400 mt-1 font-mono">
-                Report Generated: {report.exported_at.slice(0, 19)} UTC
+              <h2 className="text-base font-semibold text-slate-100 mt-2 font-mono">Run: {report.run_id}</h2>
+              <div className="text-xs text-slate-400 mt-0.5 font-mono">
+                Timestamp: {report.exported_at.slice(0, 19)} UTC
               </div>
             </div>
 
             <div className="text-right">
-              <span className="text-xs font-mono text-slate-400 block">SHA-256 LEDGER STATUS</span>
-              <span className="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 font-bold font-mono text-xs inline-flex items-center space-x-1.5 mt-1">
-                <ShieldCheck className="w-4 h-4" />
-                <span>INTEGRITY VERIFIED</span>
+              <span className="text-[11px] font-mono text-slate-500 block">SHA-256 Ledger State</span>
+              <span className="px-2.5 py-0.5 rounded bg-signal-emerald/10 border border-signal-emerald/20 text-signal-emerald font-medium font-mono text-xs inline-flex items-center space-x-1.5 mt-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Verified</span>
               </span>
             </div>
           </div>
 
           {/* 1. Tested Configuration */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-200 font-mono uppercase tracking-wider">
-              1. Pinned Configuration & Cryptographic Digests
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-semibold text-slate-200 font-mono">
+              1. Pinned configuration digests
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">BENCHMARK SUITE</span>
-                <span className="text-slate-200 font-semibold">{report.tested_configuration.suite_id}</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">SHA256: {report.tested_configuration.suite_hash?.slice(0, 24)}...</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Benchmark suite</span>
+                <span className="text-slate-200 font-medium">{report.tested_configuration.suite_id}</span>
+                <span className="text-slate-500 text-[10px] block mt-0.5">SHA256: {report.tested_configuration.suite_hash?.slice(0, 24)}...</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">DEFENSE POLICY</span>
-                <span className="text-indigo-400 font-semibold">{report.tested_configuration.policy_id}</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">SHA256: {report.tested_configuration.policy_hash?.slice(0, 24)}...</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Defense policy</span>
+                <span className="text-slate-200 font-medium">{report.tested_configuration.policy_id}</span>
+                <span className="text-slate-500 text-[10px] block mt-0.5">SHA256: {report.tested_configuration.policy_hash?.slice(0, 24)}...</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">TARGET MODEL PROFILE</span>
-                <span className="text-emerald-400 font-semibold">{report.tested_configuration.model_id}</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">Version: {report.tested_configuration.model_version}</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Target model profile</span>
+                <span className="text-slate-200 font-medium">{report.tested_configuration.model_id}</span>
+                <span className="text-slate-500 text-[10px] block mt-0.5">Version: {report.tested_configuration.model_version}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">EVALUATOR & CONFIG HASH</span>
-                <span className="text-cyan-400 font-semibold">{report.tested_configuration.evaluator_version}</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">Hash: {report.tested_configuration.config_hash?.slice(0, 24)}...</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Evaluator engine</span>
+                <span className="text-slate-200 font-medium">{report.tested_configuration.evaluator_version}</span>
+                <span className="text-slate-500 text-[10px] block mt-0.5">Config digest: {report.tested_configuration.config_hash?.slice(0, 24)}...</span>
               </div>
             </div>
           </div>
 
           {/* 2. Boundary Probes */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-200 font-mono uppercase tracking-wider">
-              2. Trust Boundary Isolation Verification
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-semibold text-slate-200 font-mono">
+              2. Trust boundary isolation verification
             </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-edge rounded">
               <table className="w-full text-left text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 bg-slate-950/40">
-                    <th className="py-2.5 px-3">Probe</th>
-                    <th className="py-2.5 px-3">Expected</th>
-                    <th className="py-2.5 px-3">Observed</th>
-                    <th className="py-2.5 px-3">Verdict</th>
-                    <th className="py-2.5 px-3">Recorded Evidence Trace</th>
+                  <tr className="border-b border-edge text-slate-400 bg-canvas/60">
+                    <th className="py-2 px-3 font-medium">Probe</th>
+                    <th className="py-2 px-3 font-medium">Expected</th>
+                    <th className="py-2 px-3 font-medium">Observed</th>
+                    <th className="py-2 px-3 font-medium">Verdict</th>
+                    <th className="py-2 px-3 font-medium">Evidence trace</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-edge">
                   {report.boundary_probes?.map((p) => (
-                    <tr key={p.probe_name}>
-                      <td className="py-2.5 px-3 font-semibold text-slate-200">{p.probe_name}</td>
-                      <td className="py-2.5 px-3 text-rose-400">{p.expected}</td>
-                      <td className="py-2.5 px-3 text-rose-400">{p.observed}</td>
-                      <td className="py-2.5 px-3 font-bold text-emerald-400">{p.verdict}</td>
-                      <td className="py-2.5 px-3 text-slate-400 max-w-sm truncate" title={p.evidence}>
+                    <tr key={p.probe_name} className="hover:bg-canvas/30">
+                      <td className="py-2 px-3 font-medium text-slate-200">{p.probe_name}</td>
+                      <td className="py-2 px-3 text-signal-rose">{p.expected}</td>
+                      <td className="py-2 px-3 text-signal-rose">{p.observed}</td>
+                      <td className="py-2 px-3 font-medium text-signal-emerald">{p.verdict}</td>
+                      <td className="py-2 px-3 text-slate-400 max-w-sm truncate" title={p.evidence}>
                         {p.evidence}
                       </td>
                     </tr>
@@ -205,51 +207,51 @@ function ReportsContent() {
           </div>
 
           {/* 3. Findings Summary */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-200 font-mono uppercase tracking-wider">
-              3. Adversarial Findings & Performance Metrics
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-semibold text-slate-200 font-mono">
+              3. Findings and performance metrics
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono text-center">
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">TOTAL CASES</span>
-                <span className="text-xl font-bold text-white">{report.findings_summary?.total_cases ?? 8}</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Total test cases</span>
+                <span className="text-lg font-semibold text-slate-100">{report.findings_summary?.total_cases ?? 8}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">PASS / MITIGATED</span>
-                <span className="text-xl font-bold text-emerald-400">{report.findings_summary?.passed ?? 8}</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Mitigated / Passed</span>
+                <span className="text-lg font-semibold text-signal-emerald">{report.findings_summary?.passed ?? 8}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">FAILED / EXPLOITED</span>
-                <span className="text-xl font-bold text-rose-400">{report.findings_summary?.failed ?? 0}</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Compromised / Failed</span>
+                <span className="text-lg font-semibold text-signal-rose">{report.findings_summary?.failed ?? 0}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">MEDIAN LATENCY</span>
-                <span className="text-xl font-bold text-cyan-400">{report.findings_summary?.p50_latency_ms ?? 0}ms</span>
+              <div className="p-3 bg-canvas rounded border border-edge">
+                <span className="text-slate-500 block text-[10px]">Median latency</span>
+                <span className="text-lg font-semibold text-slate-200">{report.findings_summary?.p50_latency_ms ?? 0}ms</span>
               </div>
             </div>
           </div>
 
           {/* 4. Residual Risks */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-200 font-mono uppercase tracking-wider">
-              4. Residual Limitations & Stated Security Bounds
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-semibold text-slate-200 font-mono">
+              4. Documented residual limitations and security boundaries
             </h3>
             <div className="space-y-2">
               {report.residual_risks?.map((risk) => (
-                <div key={risk.risk_id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                <div key={risk.risk_id} className="p-3 rounded bg-canvas border border-edge text-xs">
                   <div className="flex items-center space-x-2 font-mono">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                       risk.severity === "HIGH"
-                        ? "bg-rose-950 text-rose-400 border border-rose-800"
+                        ? "bg-signal-rose/10 text-signal-rose border border-signal-rose/30"
                         : risk.severity === "MEDIUM"
-                        ? "bg-amber-950 text-amber-400 border border-amber-800"
-                        : "bg-slate-800 text-slate-300"
+                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                        : "bg-surface text-slate-300 border border-edge"
                     }`}>
                       {risk.severity}
                     </span>
-                    <span className="font-bold text-slate-200">{risk.title}</span>
+                    <span className="font-medium text-slate-200">{risk.title}</span>
                   </div>
-                  <p className="mt-2 text-slate-400 leading-relaxed font-sans">{risk.description}</p>
+                  <p className="mt-1.5 text-slate-400 leading-relaxed font-sans text-xs">{risk.description}</p>
                 </div>
               ))}
             </div>
@@ -263,7 +265,7 @@ function ReportsContent() {
 
 export default function ReportsPage() {
   return (
-    <Suspense fallback={<div className="text-xs font-mono text-slate-500">Loading Report...</div>}>
+    <Suspense fallback={<div className="text-xs font-mono text-slate-500 py-6">Loading report...</div>}>
       <ReportsContent />
     </Suspense>
   );

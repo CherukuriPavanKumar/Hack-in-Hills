@@ -10,19 +10,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bayora: {
-          dark: "#090d16",
-          panel: "#0f172a",
-          border: "#1e293b",
-          red: "#f43f5e",
-          blue: "#6366f1",
-          gateway: "#06b6d4",
-          target: "#10b981",
-          warning: "#f59e0b",
+        canvas: "#0b0d11",
+        surface: "#13161c",
+        subtle: "#181c24",
+        edge: "#252a36",
+        "edge-subtle": "#1d212b",
+        "edge-hover": "#363d4e",
+        label: {
+          primary: "#f3f4f6",
+          secondary: "#94a3b8",
+          muted: "#64748b",
+        },
+        signal: {
+          blue: "#3b82f6",
+          emerald: "#10b981",
+          rose: "#ef4444",
+          amber: "#f59e0b",
         },
       },
       fontFamily: {
-        mono: ["JetBrains Mono", "Fira Code", "Courier New", "monospace"],
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["JetBrains Mono", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      borderRadius: {
+        DEFAULT: "6px",
+        sm: "4px",
+        md: "6px",
+        lg: "8px",
+        xl: "10px",
       },
     },
   },

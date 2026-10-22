@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Play, Lock, AlertCircle, Info, Sparkles, CheckCircle2 } from "lucide-react";
+import { Play, CheckCircle2, AlertCircle } from "lucide-react";
 import { createRun, startRun, fetchPolicies, PolicyVersion } from "@/lib/api";
 import { useRole } from "@/lib/RoleContext";
 
@@ -36,7 +36,6 @@ export default function CreateRunPage() {
     setErrorMsg(null);
 
     try {
-      // 1. Create run
       const run = await createRun(
         {
           suite_id: suiteId,
@@ -48,10 +47,7 @@ export default function CreateRunPage() {
         currentRole
       );
 
-      // 2. Trigger lifecycle start
       await startRun(run.id);
-
-      // 3. Navigate to Live View
       router.push(`/live?run_id=${run.id}`);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to initialize run");
@@ -60,201 +56,186 @@ export default function CreateRunPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <div className="flex items-center space-x-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
-          <h1 className="text-2xl font-extrabold text-white tracking-wide">
-            Create Isolated Adversarial Run
-          </h1>
-        </div>
-        <p className="text-xs text-slate-400 mt-1">
-          Configure benchmark suite, target model profile, defensive policies, and resource bounds. Configuration will be cryptographically frozen upon submission.
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="border-b border-edge pb-4">
+        <h1 className="text-xl font-bold text-label-primary tracking-tight">
+          Initialize Evaluation Run
+        </h1>
+        <p className="text-xs text-label-secondary mt-1">
+          Select target configuration and bounds. Parameters are cryptographically frozen into the audit ledger on creation.
         </p>
       </div>
 
-      <form onSubmit={handleLaunch} className="space-y-6">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6 backdrop-blur-sm">
+      <form onSubmit={handleLaunch} className="space-y-5">
+        <div className="bg-surface border border-edge rounded-lg p-5 space-y-5">
           
           {/* Suite Selector */}
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+            <label className="block text-xs font-mono font-medium text-label-muted uppercase tracking-wider mb-2">
               1. Benchmark Suite
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   suiteId === "bayora-adv-safety-v1"
-                    ? "border-cyan-500 bg-cyan-950/20 glow-cyan"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">Bayora Core Safety v1</span>
+                  <span className="font-semibold text-xs text-label-primary">Bayora Core Safety v1</span>
                   <input
                     type="radio"
                     name="suite"
                     value="bayora-adv-safety-v1"
                     checked={suiteId === "bayora-adv-safety-v1"}
                     onChange={() => setSuiteId("bayora-adv-safety-v1")}
-                    className="accent-cyan-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  8 standardized test cases: Direct prompt injection, hypothetical persona jailbreak, canary probe, SQL embedding, system prompt exfiltration & benign controls.
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
+                  8 cases: Prompt injection, roleplay jailbreak, canary leak, SQL embedding & benign controls.
                 </p>
-                <div className="mt-3 text-[11px] font-mono text-cyan-400">
-                  Fixed SHA-256 Digest: a3f7491b...
-                </div>
               </label>
 
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   suiteId === "owasp-llm-top10-bench"
-                    ? "border-cyan-500 bg-cyan-950/20 glow-cyan"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">OWASP LLM Top 10 Bench</span>
+                  <span className="font-semibold text-xs text-label-primary">OWASP LLM Top 10 Bench</span>
                   <input
                     type="radio"
                     name="suite"
                     value="owasp-llm-top10-bench"
                     checked={suiteId === "owasp-llm-top10-bench"}
                     onChange={() => setSuiteId("owasp-llm-top10-bench")}
-                    className="accent-cyan-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Focused adversarial suite aligned to OWASP LLM 01-04 (Prompt Injection, Insecure Output Handling, Sensitive Info Disclosure).
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
+                  Targeted checks covering OWASP LLM 01-04 (Injections, Insecure Output & Info Disclosure).
                 </p>
-                <div className="mt-3 text-[11px] font-mono text-cyan-400">
-                  Fixed SHA-256 Digest: d8e14f2a...
-                </div>
               </label>
             </div>
           </div>
 
           {/* Model Profile Selector */}
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+            <label className="block text-xs font-mono font-medium text-label-muted uppercase tracking-wider mb-2">
               2. Target Model Profile
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   modelId === "mock-deterministic-v1"
-                    ? "border-emerald-500 bg-emerald-950/20"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">Mock Deterministic v1</span>
+                  <span className="font-semibold text-xs text-label-primary">Deterministic Target v1</span>
                   <input
                     type="radio"
                     name="model"
                     value="mock-deterministic-v1"
                     checked={modelId === "mock-deterministic-v1"}
                     onChange={() => setModelId("mock-deterministic-v1")}
-                    className="accent-emerald-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Standard robust target adapter. Highly reproducible, zero external API keys needed, simulated ~50ms latency.
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
+                  Reproducible test target with simulated ~50ms latency. No external credentials required.
                 </p>
-                <span className="inline-block mt-2 text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  RECOMMENDED FOR EVALUATION
-                </span>
               </label>
 
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   modelId === "mock-adversarial-weak-v1"
-                    ? "border-rose-500 bg-rose-950/20"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">Mock Weak / Gullible v1</span>
+                  <span className="font-semibold text-xs text-label-primary">Vulnerable Mock v1</span>
                   <input
                     type="radio"
                     name="model"
                     value="mock-adversarial-weak-v1"
                     checked={modelId === "mock-adversarial-weak-v1"}
                     onChange={() => setModelId("mock-adversarial-weak-v1")}
-                    className="accent-rose-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Simulates a vulnerable base model. Ideal for proving how Blue Team Gateway policies intercept exploits when the model is gullible.
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
+                  Simulates an unprotected model to verify Blue gateway interception effectiveness.
                 </p>
-                <span className="inline-block mt-2 text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">
-                  DEMONSTRATES POLICY EFFECTIVENESS
-                </span>
               </label>
             </div>
           </div>
 
-          {/* Defense Policy Selector */}
+          {/* Blue Policy Selector */}
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
-              3. Blue Team Defense Policy
+            <label className="block text-xs font-mono font-medium text-label-muted uppercase tracking-wider mb-2">
+              3. Defense Policy
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   policyId === "baseline-guard-v1.0"
-                    ? "border-indigo-500 bg-indigo-950/20"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">Baseline Guard v1.0</span>
+                  <span className="font-semibold text-xs text-label-primary">Baseline Guard v1.0</span>
                   <input
                     type="radio"
                     name="policy"
                     value="baseline-guard-v1.0"
                     checked={policyId === "baseline-guard-v1.0"}
                     onChange={() => setPolicyId("baseline-guard-v1.0")}
-                    className="accent-indigo-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
                   Keyword allow-lists, length boundaries, and direct prompt override filters.
                 </p>
               </label>
 
               <label
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded p-3.5 cursor-pointer transition-colors ${
                   policyId === "hardened-strict-v2.1"
-                    ? "border-indigo-500 bg-indigo-950/20"
-                    : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                    ? "border-signal-blue bg-canvas"
+                    : "border-edge bg-canvas/40 hover:border-edge-hover"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-200">Hardened Strict v2.1</span>
+                  <span className="font-semibold text-xs text-label-primary">Hardened Strict v2.1</span>
                   <input
                     type="radio"
                     name="policy"
                     value="hardened-strict-v2.1"
                     checked={policyId === "hardened-strict-v2.1"}
                     onChange={() => setPolicyId("hardened-strict-v2.1")}
-                    className="accent-indigo-500"
+                    className="accent-signal-blue"
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Advanced multi-stage regex, delimiter sanitization, canary exfiltration blocking & SQL pattern shielding.
+                <p className="text-xs text-label-muted mt-1 leading-relaxed">
+                  Regex shields, canary exfiltration blocking, and SQL query interception.
                 </p>
               </label>
             </div>
           </div>
 
-          {/* Resource & Request Limits */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+          {/* Limits */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-edge-subtle">
             <div>
-              <label className="block text-xs font-mono text-slate-300 font-bold mb-1">
-                Max Request Budget (Per Run)
+              <label className="block text-xs font-mono text-label-secondary mb-1">
+                Request Budget Limit
               </label>
               <input
                 type="number"
@@ -262,13 +243,12 @@ export default function CreateRunPage() {
                 max="50"
                 value={requestBudget}
                 onChange={(e) => setRequestBudget(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-canvas border border-edge rounded px-3 py-1.5 text-xs font-mono text-label-primary focus:border-signal-blue focus:outline-none"
               />
-              <span className="text-[10px] text-slate-500">Gateway enforces budget limits</span>
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-300 font-bold mb-1">
+              <label className="block text-xs font-mono text-label-secondary mb-1">
                 Gateway Timeout (ms)
               </label>
               <input
@@ -278,41 +258,37 @@ export default function CreateRunPage() {
                 step="500"
                 value={timeoutMs}
                 onChange={(e) => setTimeoutMs(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-canvas border border-edge rounded px-3 py-1.5 text-xs font-mono text-label-primary focus:border-signal-blue focus:outline-none"
               />
-              <span className="text-[10px] text-slate-500">Aborts long-running hangs safely</span>
             </div>
           </div>
 
-          {/* Enforced Clean Context Security Callout */}
-          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 flex items-start space-x-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs">
-              <span className="font-bold text-emerald-300 uppercase font-mono tracking-wide">
-                Clean Context Requirement: Enforced by Backend
-              </span>
-              <p className="text-slate-300 mt-1 leading-relaxed">
-                Every launch allocates an ephemeral session ID (<code className="font-mono text-emerald-400">sess_run_*</code>) with empty conversation history. No prior prompts, canary tokens, or cross-run scratch data can be inherited.
+          {/* Clean Context Enforcement Notice */}
+          <div className="p-3 rounded bg-canvas border border-edge flex items-start space-x-2.5 text-xs">
+            <CheckCircle2 className="w-4 h-4 text-signal-emerald flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium text-label-primary font-mono">Clean Context Guarantee</span>
+              <p className="text-label-muted mt-0.5 leading-relaxed">
+                A fresh session ID (<code className="font-mono text-label-secondary">sess_run_*</code>) is provisioned with zero prior conversation history or memory tokens.
               </p>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-xs text-rose-300 flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <div className="p-2.5 rounded bg-signal-rose/10 border border-signal-rose/30 text-xs text-signal-rose flex items-center space-x-2 font-mono">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Submit Action */}
           <div className="pt-2">
             <button
               type="submit"
               disabled={isLaunching}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm shadow-xl transition-all glow-cyan flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded bg-signal-blue hover:bg-blue-600 text-white font-medium text-xs font-mono transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
             >
-              <Play className="w-4 h-4 fill-slate-950" />
-              <span>{isLaunching ? "Provisioning Isolated Environment & Starting Probes..." : "Launch Isolated Evaluation Run"}</span>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>{isLaunching ? "Provisioning Environment..." : "Start Evaluation"}</span>
             </button>
           </div>
 
