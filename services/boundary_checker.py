@@ -4,16 +4,18 @@ Executes machine-level socket, HTTP, and filesystem connectivity tests
 to empirically verify the trust boundaries between Red, Blue, and Model zones.
 """
 
+from __future__ import annotations
+
 import datetime
 import os
 import socket
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 import httpx
 from apps.api.core.config import settings
 
 
-def check_tcp_connection(host: str, port: int, timeout_sec: float = 1.0) -> Tuple_Outcome:
+def check_tcp_connection(host: str, port: int, timeout_sec: float = 1.0) -> Tuple[str, str]:
     """Test raw TCP socket connectivity."""
     start = time.perf_counter()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,9 +36,6 @@ def check_tcp_connection(host: str, port: int, timeout_sec: float = 1.0) -> Tupl
         return "DENY", f"Network unreachable/blocked for {host}:{port}: {type(e).__name__} ({str(e)})"
     finally:
         sock.close()
-
-
-Tuple_Outcome = tuple[str, str]
 
 
 class BoundaryChecker:
