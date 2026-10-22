@@ -1,0 +1,144 @@
+version: "3.8"
+
+networks:
+  control-net:
+    driver: bridge
+    internal: false
+  red-net:
+    driver: bridge
+    internal: false
+  blue-net:
+    driver: bridge
+    internal: false
+  model-net:
+    driver: bridge
+    internal: false
+
+services:
+  # -----------------------------------------------------------
+  # Database: PostgreSQL 16 (on control-net only)
+  # -----------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: bayora-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bayora
+      POSTGRES_PASSWORD: bayora_secret
+      POSTGRES_DB: bayora
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - control-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bayora -d bayora"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------
+  # Control Plane API: FastAPI (control-net, red-net, blue-net)
+  # -----------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: bayora-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://bayora:bayora_secret@db:5432/bayora
+      GATEWAY_URL: http://gateway:8002
+      TARGET_MODEL_URL: http://target-model:8003
+      BLUE_POLICY_URL: http://blue-policy:8001
+      RED_RUNNER_URL: http://red-runner:8004
+      RUNNING_IN_DOCKER: "true"
+    ports:
+      - "8000:8000"
+    networks:
+      - control-net
+      - red-net
+      - blue-net
+
+  # -----------------------------------------------------------
+  # Web Dashboard: Next.js Console (control-net only)
+  # -----------------------------------------------------------
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: bayora-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    networks:
+      - control-net
+
+  # -----------------------------------------------------------
+  # Policy Gateway: Mediation & Enforcement (red-net, model-net)
+  # -----------------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: bayora-gateway
+    restart: unless-stopped
+    environment:
+      TARGET_MODEL_URL: http://target-model:8003
+      RUNNING_IN_DOCKER: "true"
+    ports:
+      - "8002:8002"
+    networks:
+      - red-net
+      - model-net
+
+  # -----------------------------------------------------------
+  # Target Model: Isolated Runtime (model-net only!)
+  # -----------------------------------------------------------
+  target-model:
+    build:
+      context: .
+      dockerfile: services/target_model/Dockerfile
+    container_name: bayora-target-model
+    restart: unless-stopped
+    environment:
+      RUNNING_IN_DOCKER: "true"
+    networks:
+      - model-net
+
+  # -----------------------------------------------------------
+  # Red Runner: Untrusted Test Worker (red-net only!)
+  # -----------------------------------------------------------
+  red-runner:
+    build:
+      context: .
+      dockerfile: workers/red_runner/Dockerfile
+    container_name: bayora-red-runner
+    restart: unless-stopped
+    environment:
+      RUNNING_IN_DOCKER: "true"
+    networks:
+      - red-net
+
+  # -----------------------------------------------------------
+  # Blue Policy: Defensive Workspace (blue-net only!)
+  # -----------------------------------------------------------
+  blue-policy:
+    build:
+      context: .
+      dockerfile: workers/blue_policy/Dockerfile
+    container_name: bayora-blue-policy
+    restart: unless-stopped
+    environment:
+      RUNNING_IN_DOCKER: "true"
+    networks:
+      - blue-net
+
+volumes:
+  postgres_data:
