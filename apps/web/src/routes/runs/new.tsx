@@ -341,9 +341,18 @@ function NewRunWizard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {policies.map((p) => {
-                  const isRedacted = p.rules_json?.redacted === true;
-                  const kwCount = p.rules_json?.blocked_keywords?.length || 0;
-                  const regCount = p.rules_json?.regex_patterns?.length || 0;
+                  const rules = (p.rules_json as Record<string, unknown>) || {};
+                  const isRedacted = rules["redacted"] === true;
+                  const kwCount = Array.isArray(rules["blocked_keywords"])
+                    ? rules["blocked_keywords"].length
+                    : 0;
+                  const regCount = Array.isArray(rules["regex_patterns"])
+                    ? rules["regex_patterns"].length
+                    : 0;
+                  const maxPromptLen =
+                    typeof rules["max_prompt_length"] === "number"
+                      ? rules["max_prompt_length"]
+                      : 4000;
                   return (
                     <div
                       key={p.id}
@@ -374,9 +383,7 @@ function NewRunWizard() {
                         <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
                           <div>• {kwCount} blocked keywords configured</div>
                           <div>• {regCount} compiled regex patterns</div>
-                          <div>
-                            • Max prompt length: {p.rules_json?.max_prompt_length || 4000} chars
-                          </div>
+                          <div>• Max prompt length: {maxPromptLen} chars</div>
                         </div>
                       )}
 

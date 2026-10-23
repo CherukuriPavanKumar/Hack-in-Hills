@@ -13,10 +13,12 @@ import {
   Menu,
   X,
   ChevronDown,
-  Lock,
-  Eye,
-  Terminal,
+  ChevronRight,
   ExternalLink,
+  Layers,
+  Cpu,
+  Radio,
+  FileText,
 } from "lucide-react";
 import { useRole } from "../lib/role-context";
 import { api, type HealthResponse } from "../lib/api";
@@ -32,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { BayoraLogo } from "./brand/BayoraLogo";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -45,6 +48,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
+  const isLandingPage = currentPath === "/";
 
   useEffect(() => {
     let mounted = true;
@@ -55,7 +59,7 @@ export function AppShell({ children }: AppShellProps) {
           setHealth(res);
           setHealthStatus("online");
         }
-      } catch (err) {
+      } catch {
         if (mounted) {
           setHealthStatus("offline");
         }
@@ -69,137 +73,306 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
-  const navLinks = [
-    { to: "/", label: "Overview", icon: Shield },
-    { to: "/runs", label: "Evaluations", icon: Activity },
-    { to: "/isolation", label: "Isolation Probes", icon: Network },
-    { to: "/audit", label: "Audit Ledger", icon: Database },
-    { to: "/compare", label: "Compare", icon: GitCompare },
-    { to: "/policies", label: "Defensive Policies", icon: FileCode2 },
+  const navGroups = [
+    {
+      label: "Workspace",
+      items: [
+        {
+          to: "/overview",
+          label: "Overview",
+          icon: Shield,
+          match: (p: string) => p === "/overview" || p === "/",
+        },
+        { to: "/runs", label: "Evaluations", icon: Activity, match: (p: string) => p === "/runs" },
+        {
+          to: "/runs/new",
+          label: "New Evaluation",
+          icon: PlusCircle,
+          match: (p: string) => p === "/runs/new",
+        },
+      ],
+    },
+    {
+      label: "Security & Mediation",
+      items: [
+        {
+          to: "/isolation",
+          label: "Isolation Probes",
+          icon: Network,
+          match: (p: string) => p.startsWith("/isolation"),
+        },
+        {
+          to: "/policies",
+          label: "Defensive Policies",
+          icon: FileCode2,
+          match: (p: string) => p.startsWith("/policies"),
+        },
+        {
+          to: "/compare",
+          label: "Compare Runs",
+          icon: GitCompare,
+          match: (p: string) => p.startsWith("/compare"),
+        },
+      ],
+    },
+    {
+      label: "Evidence Plane",
+      items: [
+        {
+          to: "/audit",
+          label: "Audit Ledger",
+          icon: Database,
+          match: (p: string) => p.startsWith("/audit"),
+        },
+      ],
+    },
   ];
 
-  const getRoleBadgeColor = (r: BayoraRole) => {
+  const getRoleBadge = (r: BayoraRole) => {
     switch (r) {
       case "red_team":
-        return "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-900";
+        return {
+          bg: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900",
+          dot: "bg-rose-500",
+        };
       case "blue_team":
-        return "bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-900";
+        return {
+          bg: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-900",
+          dot: "bg-blue-500",
+        };
       case "auditor":
-        return "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-900";
+        return {
+          bg: "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-900",
+          dot: "bg-amber-500",
+        };
       default:
-        return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-900";
+        return {
+          bg: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700",
+          dot: "bg-indigo-600",
+        };
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-700 to-sky-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                <Shield className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800 dark:from-white dark:via-indigo-200 dark:to-slate-300">
-                  BAYORA
-                </span>
-                <span className="text-[10px] tracking-widest uppercase font-semibold text-indigo-600 dark:text-indigo-400">
-                  AI Security Control Room
-                </span>
-              </div>
+  const currentBadge = getRoleBadge(role);
+
+  // If on public landing page (/), render high-level product navigation
+  if (isLandingPage) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-indigo-500 selection:text-white">
+        <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <BayoraLogo variant="lockup" size="md" />
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((item) => {
+            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-muted-foreground">
+              <a href="#architecture" className="hover:text-foreground transition-colors">
+                Architecture
+              </a>
+              <a href="#capabilities" className="hover:text-foreground transition-colors">
+                Capabilities
+              </a>
+              <a href="#evidence" className="hover:text-foreground transition-colors">
+                Cryptographic Evidence
+              </a>
+              <a
+                href="https://github.com/CherukuriPavanKumar/Hack-in-Hills"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
+                GitHub <ExternalLink className="w-3 h-3" />
+              </a>
+            </nav>
+
+            <div className="flex items-center gap-3">
+              <Link to="/overview">
+                <Button
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs px-4 h-9 shadow-xs"
+                >
+                  Open Control Room <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1">{children}</main>
+
+        <footer className="border-t border-border bg-card/60 py-10 text-xs text-muted-foreground">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <BayoraLogo variant="compact" size="sm" showWordmark={false} />
+              <span className="font-bold text-foreground">BAYORA</span>
+              <span>— Hack in Hills 2026 (Problem Statement 04)</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <Link to="/overview" className="hover:text-foreground transition-colors">
+                Control Room
+              </Link>
+              <Link to="/isolation" className="hover:text-foreground transition-colors">
+                Isolation Probes
+              </Link>
+              <Link to="/audit" className="hover:text-foreground transition-colors">
+                Audit Ledger
+              </Link>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                SHA-256 Chained Ledger
+              </span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // Operator Workspace Shell for all operational routes (/overview, /runs, etc.)
+  return (
+    <div className="min-h-screen flex bg-background text-foreground antialiased selection:bg-indigo-500 selection:text-white">
+      {/* Desktop Fixed Left Sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-sidebar shrink-0 select-none">
+        {/* Brand header */}
+        <div className="h-16 px-5 border-b border-sidebar-border flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <BayoraLogo variant="lockup" size="md" />
+          </Link>
+        </div>
+
+        {/* Navigation Categories */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 text-xs">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <div className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                {group.label}
+              </div>
+              {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  item.to === "/" ? currentPath === "/" : currentPath.startsWith(item.to);
+                const isActive = item.match(currentPath);
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                       isActive
-                        ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/60"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-2xs"
+                        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon
+                      className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                    />
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
-            </nav>
-          </div>
+            </div>
+          ))}
 
-          {/* Right Controls: Role Selector, Status, Action */}
-          <div className="flex items-center gap-3">
-            {/* Backend Health Pill */}
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"
-              title={
-                healthStatus === "online"
-                  ? `Connected to ${health?.service || "Bayora Backend"} on :8000`
-                  : healthStatus === "offline"
-                    ? "Backend is offline or unreachable"
-                    : "Checking backend health..."
-              }
+          {/* Product Documentation link */}
+          <div className="pt-2 border-t border-sidebar-border">
+            <Link
+              to="/"
+              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors"
             >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Product Architecture</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Sidebar Footer: System Status */}
+        <div className="p-3 border-t border-sidebar-border bg-sidebar/50 text-[11px] font-mono space-y-2">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>FastAPI Backend:</span>
+            <span className="flex items-center gap-1.5 font-bold">
               <span
                 className={`w-2 h-2 rounded-full ${
                   healthStatus === "online"
                     ? "bg-emerald-500 animate-pulse"
                     : healthStatus === "offline"
-                      ? "bg-amber-500"
-                      : "bg-slate-400 animate-ping"
+                      ? "bg-rose-500"
+                      : "bg-amber-400"
                 }`}
               />
-              <span className="text-slate-600 dark:text-slate-400">
-                {healthStatus === "online"
-                  ? "API :8000"
-                  : healthStatus === "offline"
-                    ? "API Offline"
-                    : "Connecting..."}
+              <span
+                className={
+                  healthStatus === "online"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-muted-foreground"
+                }
+              >
+                {healthStatus === "online" ? "PORT :8000" : healthStatus.toUpperCase()}
               </span>
-            </div>
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground/80">
+            <span>Isolation Mode:</span>
+            <span>4-Zone Bridge</span>
+          </div>
+        </div>
+      </aside>
 
-            {/* Active Role Selector */}
+      {/* Main Column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Control Bar */}
+        <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          {/* Mobile brand & hamburger */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
+              aria-label="Toggle navigation"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <Link to="/overview">
+              <BayoraLogo variant="compact" size="sm" />
+            </Link>
+          </div>
+
+          {/* Breadcrumb or title indication */}
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Control Room</span>
+            <span>/</span>
+            <span className="capitalize font-mono">
+              {currentPath.replace("/", "").replace(/-/g, " ") || "overview"}
+            </span>
+          </div>
+
+          {/* Right Controls: Role Selector + Action */}
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Perspective / Role Selector Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${getRoleBadgeColor(
-                    role,
-                  )} hover:opacity-90`}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs font-semibold cursor-pointer transition-all ${currentBadge.bg}`}
                 >
-                  <span className="font-semibold">{info.label}</span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                  <span className={`w-2 h-2 rounded-full ${currentBadge.dot}`} />
+                  <span>{info.label}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Select Perspective / Role
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                  Security Perspective / Role
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {ROLE_INFO.map((r) => (
                   <DropdownMenuItem
                     key={r.id}
                     onClick={() => setRole(r.id)}
-                    className={`flex flex-col items-start gap-1 p-2.5 cursor-pointer ${
-                      role === r.id ? "bg-slate-100 dark:bg-slate-800 font-medium" : ""
+                    className={`flex flex-col items-start gap-1 p-2.5 cursor-pointer text-xs ${
+                      role === r.id ? "bg-accent font-medium" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-semibold text-sm">{r.label}</span>
-                      {role === r.id && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                      )}
+                      <span className="font-semibold">{r.label}</span>
+                      {role === r.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
                     </div>
-                    <span className="text-xs text-muted-foreground font-normal leading-snug">
+                    <span className="text-[11px] text-muted-foreground font-normal leading-tight">
                       {r.plain}
                     </span>
                   </DropdownMenuItem>
@@ -207,95 +380,53 @@ export function AppShell({ children }: AppShellProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Primary Action Button */}
+            {/* Quick Action: New Evaluation */}
             <Link to="/runs/new">
               <Button
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 font-medium"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-8 px-3 shadow-xs"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">New Evaluation</span>
+                <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
+                <span>New Evaluation</span>
               </Button>
             </Link>
-
-            {/* Mobile menu button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
-        </div>
+        </header>
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-2 pb-4 space-y-1">
-            {navLinks.map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                item.to === "/" ? currentPath === "/" : currentPath.startsWith(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive
-                      ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+          <div className="lg:hidden border-b border-border bg-card px-4 py-3 space-y-4 text-xs">
+            {navGroups.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {group.label}
+                </div>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${
+                        item.match(currentPath)
+                          ? "bg-accent text-accent-foreground font-semibold"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
-      </header>
 
-      {/* Role Context Notification Banner (e.g. Red Team redaction awareness) */}
-      {role === "red_team" && (
-        <div className="bg-rose-500/10 border-b border-rose-500/20 px-4 py-2 text-xs text-rose-800 dark:text-rose-300 flex items-center justify-between">
-          <div className="max-w-7xl mx-auto w-full flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-            <span>
-              <strong>Adversarial Mode (Red Team):</strong> Defensive policy regexes and keywords
-              are automatically redacted to simulate real-world boundary security.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
-
-      {/* Professional SOC Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-            <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-              <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span>Bayora AI Security Control Plane</span>
-            </div>
-            <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
-            <span>Tamper-Evident SHA-256 Ledger & Network Isolation</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[11px]">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              FastAPI Engine v1.0
-            </span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span>Standard: OWASP LLM Top 10</span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span>Cryptographic Chain: Genesis 0x00</span>
-          </div>
-        </div>
-      </footer>
+        {/* Content Viewport */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+      </div>
     </div>
   );
 }

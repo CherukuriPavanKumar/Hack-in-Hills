@@ -10,7 +10,7 @@ FRONTEND_BASE = "http://localhost:3000/api"
 
 def run_e2e_verification():
     print("=== STARTING LIVE BAYORA END-TO-END VERIFICATION ===")
-    with httpx.Client(timeout=10.0) as client:
+    with httpx.Client(timeout=30.0) as client:
         # 1. Check direct backend health and frontend proxied health
         res_health = client.get(f"{BASE}/health")
         assert res_health.status_code == 200

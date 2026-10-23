@@ -236,9 +236,14 @@ function AuditLedgerPage() {
             <div className="flex items-center gap-4 font-mono text-[11px] opacity-80 pt-1">
               <span>Total Events Verified: {verifyResult.total_events}</span>
               <span>•</span>
-              <span>First Mismatch: {verifyResult.mismatch_seq ?? "None"}</span>
+              <span>First Mismatch: {verifyResult.failing_seq ?? "None"}</span>
               <span>•</span>
-              <span>Verified: {new Date(verifyResult.verified_at).toLocaleTimeString()}</span>
+              <span>
+                Verified:{" "}
+                {verifyResult.verified_at
+                  ? new Date(verifyResult.verified_at).toLocaleTimeString()
+                  : "Just now"}
+              </span>
             </div>
           </div>
         </div>

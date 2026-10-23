@@ -222,11 +222,17 @@ function PoliciesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filtered.map((p) => {
-            const isRedacted = p.rules_json?.redacted === true;
-            const keywords = p.rules_json?.blocked_keywords || [];
-            const regexes = p.rules_json?.regex_patterns || [];
-            const canary = p.rules_json?.block_canary_tokens ?? true;
-            const maxLen = p.rules_json?.max_prompt_length ?? 4000;
+            const rules = (p.rules_json as Record<string, unknown>) || {};
+            const isRedacted = rules["redacted"] === true;
+            const keywords: string[] = Array.isArray(rules["blocked_keywords"])
+              ? (rules["blocked_keywords"] as string[])
+              : [];
+            const regexes: string[] = Array.isArray(rules["regex_patterns"])
+              ? (rules["regex_patterns"] as string[])
+              : [];
+            const canary = rules["block_canary_tokens"] !== false;
+            const maxLen =
+              typeof rules["max_prompt_length"] === "number" ? rules["max_prompt_length"] : 4000;
 
             return (
               <Card
@@ -267,7 +273,7 @@ function PoliciesPage() {
                           Blocked Keywords ({keywords.length})
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                          {keywords.map((kw, i) => (
+                          {keywords.map((kw: string, i: number) => (
                             <Badge
                               key={i}
                               variant="secondary"
@@ -285,7 +291,7 @@ function PoliciesPage() {
                           Regex Filters ({regexes.length})
                         </span>
                         <div className="space-y-1 max-h-24 overflow-y-auto font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                          {regexes.map((rx, i) => (
+                          {regexes.map((rx: string, i: number) => (
                             <div
                               key={i}
                               className="p-1 rounded bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 truncate"

@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none" width="100%" height="auto">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <pattern id="diagGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" stroke-width="0.5" stroke-opacity="0.5" />
+    </pattern>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 1 1 L 7 4 L 1 7 Z" fill="#f43f5e" />
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 1 1 L 7 4 L 1 7 Z" fill="#10b981" />
+    </marker>
+    <marker id="arrowIndigo" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 1 1 L 7 4 L 1 7 Z" fill="#818cf8" />
+    </marker>
+  </defs>
+
+  <rect width="900" height="520" rx="16" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="1.5" />
+  <rect width="900" height="520" rx="16" fill="url(#diagGrid)" />
+
+  <!-- Title & Status Header inside diagram -->
+  <g transform="translate(30, 30)">
+    <circle cx="8" cy="8" r="4" fill="#10b981" />
+    <text x="22" y="12" font-family="monospace" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">BAYORA VERIFIED ZERO-TRUST ARCHITECTURE</text>
+    <text x="750" y="12" font-family="monospace" font-size="10" fill="#64748b">STANDARD: PS-04 ISO</text>
+  </g>
+
+  <!-- Zone 1: Red Runner (Untrusted) -->
+  <g transform="translate(40, 80)">
+    <rect width="240" height="170" rx="12" fill="#1a111a" stroke="#e11d48" stroke-width="1.5" stroke-dasharray="4 2" />
+    <rect x="0" y="0" width="240" height="34" rx="12" fill="#2d121c" />
+    <circle cx="18" cy="17" r="4" fill="#f43f5e" />
+    <text x="32" y="21" font-family="monospace" font-size="11" font-weight="700" fill="#fecdd3">ZONE 1: red-net (UNTRUSTED)</text>
+    
+    <text x="20" y="60" font-family="system-ui" font-size="13" font-weight="600" fill="#fda4af">Adversarial Test Runner</text>
+    <text x="20" y="80" font-family="system-ui" font-size="11" fill="#94a3b8">Executes jailbreaks &amp; injection suites</text>
+    <text x="20" y="100" font-family="monospace" font-size="10" fill="#f43f5e">• Egress firewall enforced</text>
+    <text x="20" y="118" font-family="monospace" font-size="10" fill="#f43f5e">• Container port: 8004 (isolated)</text>
+    <text x="20" y="136" font-family="monospace" font-size="10" fill="#f43f5e">• No cross-tenant host mount</text>
+  </g>
+
+  <!-- Zone 2: Blue Policy (Defensive) -->
+  <g transform="translate(40, 290)">
+    <rect width="240" height="170" rx="12" fill="#111827" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 2" />
+    <rect x="0" y="0" width="240" height="34" rx="12" fill="#172554" />
+    <circle cx="18" cy="17" r="4" fill="#3b82f6" />
+    <text x="32" y="21" font-family="monospace" font-size="11" font-weight="700" fill="#bfdbfe">ZONE 2: blue-net (DEFENSIVE)</text>
+    
+    <text x="20" y="60" font-family="system-ui" font-size="13" font-weight="600" fill="#93c5fd">Defensive Policy Engine</text>
+    <text x="20" y="80" font-family="system-ui" font-size="11" fill="#94a3b8">Stores secret guardrails &amp; canaries</text>
+    <text x="20" y="100" font-family="monospace" font-size="10" fill="#60a5fa">• Immutable version digests</text>
+    <text x="20" y="118" font-family="monospace" font-size="10" fill="#60a5fa">• Container port: 8001 (isolated)</text>
+    <text x="20" y="136" font-family="monospace" font-size="10" fill="#60a5fa">• Secret canary token generation</text>
+  </g>
+
+  <!-- Blocked Connection: T1 & T2 Red <-> Blue -->
+  <path d="M 160 250 V 290" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 3" />
+  <g transform="translate(110, 260)">
+    <rect width="100" height="22" rx="4" fill="#4c0519" stroke="#e11d48" stroke-width="1" />
+    <text x="50" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#fecdd3">✕ T1/T2 DENIED</text>
+  </g>
+
+  <!-- Zone 3: Policy Gateway (Mediation Nexus) -->
+  <g transform="translate(350, 150)">
+    <rect width="200" height="230" rx="14" fill="#13142e" stroke="#6366f1" stroke-width="2" />
+    <rect x="0" y="0" width="200" height="38" rx="14" fill="#1e1b4b" />
+    <rect x="15" y="12" width="14" height="14" rx="3" fill="#6366f1" />
+    <text x="36" y="24" font-family="monospace" font-size="12" font-weight="700" fill="#e0e7ff">POLICY GATEWAY</text>
+    
+    <text x="18" y="65" font-family="system-ui" font-size="12" font-weight="600" fill="#c7d2fe">Mandatory Inspection</text>
+    <text x="18" y="85" font-family="system-ui" font-size="11" fill="#94a3b8">The sole routed egress path</text>
+    
+    <g transform="translate(15, 105)">
+      <rect width="170" height="28" rx="6" fill="#1e1b4b" stroke="#3730a3" />
+      <text x="10" y="18" font-family="monospace" font-size="10" fill="#a5b4fc">Regex Filter &amp; Block</text>
+    </g>
+    <g transform="translate(15, 140)">
+      <rect width="170" height="28" rx="6" fill="#1e1b4b" stroke="#3730a3" />
+      <text x="10" y="18" font-family="monospace" font-size="10" fill="#a5b4fc">Canary Exfil Traps</text>
+    </g>
+    <g transform="translate(15, 175)">
+      <rect width="170" height="28" rx="6" fill="#1e1b4b" stroke="#3730a3" />
+      <text x="10" y="18" font-family="monospace" font-size="10" fill="#a5b4fc">Request Budget Limit</text>
+    </g>
+
+    <text x="100" y="220" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#818cf8">:8002 GATEWAY</text>
+  </g>
+
+  <!-- Permitted Red -> Gateway (T4: ALLOW) -->
+  <path d="M 280 165 H 350" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrowRed)" />
+  <g transform="translate(290, 145)">
+    <rect width="55" height="18" rx="3" fill="#1e1b4b" stroke="#818cf8" stroke-width="0.8" />
+    <text x="28" y="13" text-anchor="middle" font-family="monospace" font-size="9" fill="#c7d2fe">PROMPT</text>
+  </g>
+
+  <!-- Policy Sync Blue -> Gateway -->
+  <path d="M 280 375 H 350" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3 3" />
+  <g transform="translate(285, 355)">
+    <rect width="60" height="18" rx="3" fill="#1e1b4b" stroke="#3b82f6" stroke-width="0.8" />
+    <text x="30" y="13" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#93c5fd">RULES</text>
+  </g>
+
+  <!-- Zone 4: Target Model (Isolated Inference) -->
+  <g transform="translate(620, 80)">
+    <rect width="240" height="170" rx="12" fill="#0b231c" stroke="#10b981" stroke-width="1.5" />
+    <rect x="0" y="0" width="240" height="34" rx="12" fill="#064e3b" />
+    <circle cx="18" cy="17" r="4" fill="#34d399" />
+    <text x="32" y="21" font-family="monospace" font-size="11" font-weight="700" fill="#a7f3d0">ZONE 4: model-net (ISOLATED)</text>
+    
+    <text x="20" y="60" font-family="system-ui" font-size="13" font-weight="600" fill="#6ee7b7">Target Model Runtime</text>
+    <text x="20" y="80" font-family="system-ui" font-size="11" fill="#94a3b8">Clean ephemeral inference session</text>
+    <text x="20" y="100" font-family="monospace" font-size="10" fill="#34d399">• Isolated network namespace</text>
+    <text x="20" y="118" font-family="monospace" font-size="10" fill="#34d399">• Port 8003: unmapped to Red</text>
+    <text x="20" y="136" font-family="monospace" font-size="10" fill="#34d399">• Fresh context zero-retention</text>
+  </g>
+
+  <!-- Permitted Gateway -> Model Flow -->
+  <path d="M 550 200 H 620" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowGreen)" />
+  <g transform="translate(560, 180)">
+    <rect width="50" height="18" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="0.8" />
+    <text x="25" y="13" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#a7f3d0">CLEAN</text>
+  </g>
+
+  <!-- Direct Bypass Blocked T3 -->
+  <path d="M 280 115 C 450 40, 520 40, 620 115" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3" />
+  <g transform="translate(400, 48)">
+    <rect width="130" height="22" rx="4" fill="#4c0519" stroke="#e11d48" stroke-width="1" />
+    <text x="65" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#fecdd3">✕ T3 DIRECT BYPASS BLOCKED</text>
+  </g>
+
+  <!-- Zone 5: Control Plane & SHA-256 Audit Ledger -->
+  <g transform="translate(620, 290)">
+    <rect width="240" height="170" rx="12" fill="#181329" stroke="#8b5cf6" stroke-width="1.5" />
+    <rect x="0" y="0" width="240" height="34" rx="12" fill="#2e1065" />
+    <circle cx="18" cy="17" r="4" fill="#a78bfa" />
+    <text x="32" y="21" font-family="monospace" font-size="11" font-weight="700" fill="#ddd6fe">AUDIT LEDGER (SHA-256)</text>
+    
+    <text x="20" y="60" font-family="system-ui" font-size="13" font-weight="600" fill="#c4b5fd">Cryptographic Evidence Plane</text>
+    <text x="20" y="80" font-family="system-ui" font-size="11" fill="#94a3b8">Append-only chained events</text>
+    <text x="20" y="102" font-family="monospace" font-size="9.5" fill="#a78bfa">H(n) = SHA256(H(n-1) : Evt)</text>
+    <text x="20" y="120" font-family="monospace" font-size="9.5" fill="#a78bfa">Genesis: 0000000000000000...</text>
+    <text x="20" y="138" font-family="monospace" font-size="9.5" fill="#34d399">✓ Tamper drill verified</text>
+  </g>
+
+  <!-- Gateway -> Audit stream -->
+  <path d="M 550 330 H 620" stroke="#818cf8" stroke-width="2" stroke-dasharray="2 2" marker-end="url(#arrowIndigo)" />
+  <g transform="translate(560, 310)">
+    <text x="25" y="14" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#c7d2fe">LOG HASH</text>
+  </g>
+
+  <!-- Bottom Legend Bar -->
+  <g transform="translate(40, 480)">
+    <circle cx="10" cy="10" r="4" fill="#f43f5e" />
+    <text x="20" y="14" font-family="monospace" font-size="10" fill="#cbd5e1">Red Zone</text>
+    
+    <circle cx="110" cy="10" r="4" fill="#3b82f6" />
+    <text x="120" y="14" font-family="monospace" font-size="10" fill="#cbd5e1">Blue Zone</text>
+
+    <circle cx="210" cy="10" r="4" fill="#6366f1" />
+    <text x="220" y="14" font-family="monospace" font-size="10" fill="#cbd5e1">Gateway Mediation</text>
+
+    <circle cx="370" cy="10" r="4" fill="#10b981" />
+    <text x="380" y="14" font-family="monospace" font-size="10" fill="#cbd5e1">Model Target</text>
+
+    <line x1="490" y1="10" x2="520" y2="10" stroke="#10b981" stroke-width="2" />
+    <text x="528" y="14" font-family="monospace" font-size="10" fill="#cbd5e1">Permitted Flow</text>
+
+    <line x1="640" y1="10" x2="670" y2="10" stroke="#ef4444" stroke-width="2" stroke-dasharray="3 2" />
+    <text x="678" y="14" font-family="monospace" font-size="10" fill="#ef4444">Blocked Boundary</text>
+  </g>
+</svg>

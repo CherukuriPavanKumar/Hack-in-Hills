@@ -202,7 +202,9 @@ function RunsIndex() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredRuns.map((r) => {
-                  const passPct = r.score_summary?.pass_rate_pct ?? null;
+                  const total = r.score_summary?.total_cases ?? 0;
+                  const passed = r.score_summary?.passed ?? 0;
+                  const passPct = total > 0 ? Math.round((passed / total) * 100) : null;
                   const blockedCount = r.score_summary?.blocked_by_gateway ?? 0;
                   return (
                     <tr
@@ -245,7 +247,7 @@ function RunsIndex() {
                         {r.policy_id}
                       </td>
                       <td className="px-4 py-3">
-                        {passPct !== null ? (
+                        {total > 0 && passPct !== null ? (
                           <div className="space-y-0.5">
                             <span
                               className={`font-bold ${
@@ -254,7 +256,7 @@ function RunsIndex() {
                                   : "text-amber-600 dark:text-amber-400"
                               }`}
                             >
-                              {passPct}% pass
+                              {passPct}% ({passed}/{total})
                             </span>
                             {blockedCount > 0 && (
                               <span className="text-[10px] text-slate-400 block">
@@ -263,7 +265,7 @@ function RunsIndex() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400">In Progress</span>
+                          <span className="text-slate-400 font-mono">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 font-mono text-slate-500">

@@ -445,7 +445,9 @@ function RunDetailView() {
             <p>{verifyResult.reason}</p>
             <div className="font-mono text-[11px] opacity-80">
               Total Events: {verifyResult.total_events} • Verified at:{" "}
-              {new Date(verifyResult.verified_at).toLocaleTimeString()}
+              {verifyResult.verified_at
+                ? new Date(verifyResult.verified_at).toLocaleTimeString()
+                : "Just now"}
             </div>
           </div>
           <button

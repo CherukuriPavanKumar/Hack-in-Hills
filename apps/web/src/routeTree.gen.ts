@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as IsolationRouteImport } from './routes/isolation'
+import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as PoliciesRouteImport } from './routes/policies'
 import { Route as RunsIndexRouteImport } from './routes/runs/index'
 import { Route as RunsRunIdRouteImport } from './routes/runs/$runId'
@@ -36,6 +37,11 @@ const CompareRoute = CompareRouteImport.update({
 const IsolationRoute = IsolationRouteImport.update({
   id: '/isolation',
   path: '/isolation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverviewRoute = OverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PoliciesRoute = PoliciesRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuditRoute
   '/compare': typeof CompareRoute
   '/isolation': typeof IsolationRoute
+  '/overview': typeof OverviewRoute
   '/policies': typeof PoliciesRoute
   '/runs/$runId': typeof RunsRunIdRoute
   '/runs/new': typeof RunsNewRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuditRoute
   '/compare': typeof CompareRoute
   '/isolation': typeof IsolationRoute
+  '/overview': typeof OverviewRoute
   '/policies': typeof PoliciesRoute
   '/runs/$runId': typeof RunsRunIdRoute
   '/runs/new': typeof RunsNewRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/audit': typeof AuditRoute
   '/compare': typeof CompareRoute
   '/isolation': typeof IsolationRoute
+  '/overview': typeof OverviewRoute
   '/policies': typeof PoliciesRoute
   '/runs/$runId': typeof RunsRunIdRoute
   '/runs/new': typeof RunsNewRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/compare'
     | '/isolation'
+    | '/overview'
     | '/policies'
     | '/runs/$runId'
     | '/runs/new'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/compare'
     | '/isolation'
+    | '/overview'
     | '/policies'
     | '/runs/$runId'
     | '/runs/new'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/compare'
     | '/isolation'
+    | '/overview'
     | '/policies'
     | '/runs/$runId'
     | '/runs/new'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AuditRoute: typeof AuditRoute
   CompareRoute: typeof CompareRoute
   IsolationRoute: typeof IsolationRoute
+  OverviewRoute: typeof OverviewRoute
   PoliciesRoute: typeof PoliciesRoute
   RunsRunIdRoute: typeof RunsRunIdRoute
   RunsNewRoute: typeof RunsNewRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/isolation'
       fullPath: '/isolation'
       preLoaderRoute: typeof IsolationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview': {
+      id: '/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policies': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditRoute: AuditRoute,
   CompareRoute: CompareRoute,
   IsolationRoute: IsolationRoute,
+  OverviewRoute: OverviewRoute,
   PoliciesRoute: PoliciesRoute,
   RunsRunIdRoute: RunsRunIdRoute,
   RunsNewRoute: RunsNewRoute,
