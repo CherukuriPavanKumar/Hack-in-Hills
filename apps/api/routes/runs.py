@@ -151,7 +151,7 @@ async def start_run(
 
 @router.get("", response_model=List[RunResponse])
 def list_runs(
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=100, ge=1, le=100),
     db: Session = Depends(get_db),
     role: Role = Depends(get_current_role),
 ):
