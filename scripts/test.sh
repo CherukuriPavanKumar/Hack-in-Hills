@@ -10,4 +10,7 @@ else
     pytest -v tests/
 fi
 
-echo "=== All 21 Cryptographic, Isolation & Acceptance Tests Passed! ==="
+echo "=== Running Frontend Vitest Suite ==="
+(cd apps/web && npm test && npx tsc --noEmit)
+
+echo "=== All Cryptographic, Isolation, Acceptance & Frontend Tests Passed! ==="

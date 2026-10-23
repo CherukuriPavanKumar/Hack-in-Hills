@@ -136,16 +136,24 @@ docker compose exec red-runner python3 /app/workers/red_runner/probe.py
 
 ### Option 2: Local Development
 ```bash
-# 1. Install Python dependencies
+# 1. Install Python backend dependencies
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 2. Run the automated test suite (all 21 tests pass)
-./scripts/test.sh
+# 2. Install Web frontend dependencies
+cd apps/web && npm install && cd ../..
 
-# 3. Launch local servers
+# 3. Run automated tests
+pytest -v tests/           # All 46 backend tests
+cd apps/web && npm test    # All 17 frontend tests
+
+# 4. Launch local development servers (Backend: 8000, Frontend: 3000)
+# Linux / macOS:
 ./scripts/dev.sh
+
+# Windows PowerShell:
+powershell -ExecutionPolicy Bypass ./scripts/dev.ps1
 ```
 
 ---
@@ -156,7 +164,7 @@ pip install -r requirements.txt
 .
 ├── apps/
 │   ├── api/                    # FastAPI control plane, routes, models, schemas, auth
-│   └── web/                    # Next.js App Router, Tailwind CSS, security console UI
+│   └── web/                    # TanStack Start / Vite, React 19, Tailwind CSS, security console UI
 ├── services/
 │   ├── gateway/                # Policy Gateway mediation & request budgeting
 │   ├── target_model/           # Deterministic Mock Target Adapter & session isolation
@@ -165,30 +173,33 @@ pip install -r requirements.txt
 │   ├── red_runner/             # Fixed benchmark suites & boundary probe script
 │   └── blue_policy/            # Versioned defense policy bundles & compiler
 ├── tests/
-│   ├── security/               # T1-T10 acceptance tests
+│   ├── security/               # T1-T10 acceptance tests & auth impersonation tests
 │   ├── unit/                   # SHA-256 hash chain & tamper tests
-│   └── test_api_and_isolation.py # End-to-end API integration tests
+│   ├── test_api_and_isolation.py # End-to-end API integration tests
+│   └── test_api_contract_complete.py # Complete 15-endpoint API contract validation
 ├── docs/
 │   ├── threat_model.md         # STRIDE / OWASP LLM boundary analysis
 │   ├── api_contract.md         # Endpoint contract & schemas
 │   └── known_limitations.md    # Transparent security boundary disclosure
 ├── docker-compose.yml          # 4 explicit bridge networks, 0 docker.sock
 └── scripts/
-    ├── dev.sh                  # Local launch script
+    ├── dev.sh                  # Local launch script (Linux/macOS)
+    ├── dev.ps1                 # Local launch script (Windows PowerShell)
     ├── test.sh                 # Test runner script
-    └── run_docker.sh           # Docker build & boundary verification
+    ├── run_docker.sh           # Docker build & boundary verification
+    └── verify_e2e_live.py      # End-to-end live API verification script
 ```
 
 ---
 
 ## Technology Stack
 
-- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS, Lucide Icons.
-- **Backend:** Python 3.11 / 3.15, FastAPI, Pydantic v2, SQLAlchemy.
+- **Frontend:** TanStack Start, Vite, React 19, TypeScript, Tailwind CSS, Radix UI, Lucide Icons.
+- **Backend:** Python 3.11 / 3.14+, FastAPI, Pydantic v2, SQLAlchemy.
 - **Database:** PostgreSQL 16 (with SQLite local fallback).
 - **Integrity:** SHA-256 Canonical JSON Hash-Chained Audit Ledger.
 - **Isolation:** Docker Compose with 4 named networks (`control-net`, `red-net`, `blue-net`, `model-net`).
-- **Testing:** Pytest & Pytest-Asyncio.
+- **Testing:** Pytest (46 tests), Vitest (17 tests), TypeScript type check (0 errors), ESLint (0 errors).
 
 ---
 

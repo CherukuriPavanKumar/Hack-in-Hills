@@ -38,11 +38,15 @@ postgres_data/
 .coverage
 htmlcov/
 
-# Node & Next.js
+# Node & Web build output
 node_modules/
 .next/
 out/
-package-lock.json
+.output/
+.tanstack/
+.nitro/
+.vinxi/
+dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
