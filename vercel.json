@@ -8,7 +8,7 @@
     },
     "web": {
       "root": "apps/web",
-      "framework": "tanstack-start-lovable",
+      "framework": "tanstack-start",
       "bindings": [
         {
           "type": "service",

@@ -44,6 +44,7 @@ node_modules/
 .next/
 out/
 .output/
+.vercel/
 .tanstack/
 .nitro/
 .vinxi/
