@@ -12,6 +12,7 @@ eggs/
 .eggs/
 /lib/
 /lib64/
+!apps/web/src/lib/
 parts/
 sdist/
 var/
@@ -43,6 +44,7 @@ node_modules/
 .next/
 out/
 .output/
+.vercel/
 .tanstack/
 .nitro/
 .vinxi/
