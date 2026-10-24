@@ -33,6 +33,8 @@ from apps.api.models.models import (
 from services.boundary_checker import BoundaryChecker
 from services.evaluator.evaluator import Evaluator, sha256_text
 from services.gateway.gateway import PolicyGateway
+from services.providers.base import ModelMessage, ProviderError, ProviderRequest
+from services.providers.registry import get_provider_registry
 from services.target_model.target_adapter import (
     generate_deterministic_completion,
     SESSION_MEMORY,
@@ -240,6 +242,39 @@ class Orchestrator:
             run.status = "RUNNING"
             db.commit()
 
+            # Resolve model provider from registry
+            registry = get_provider_registry()
+            try:
+                provider_instance, resolved_model = registry.resolve_provider_and_model(
+                    model_id=run.model_id,
+                    provider_id=getattr(run, "provider", None),
+                )
+                if provider_instance.provider_id == "mock" and not settings.MOCK_MODE_ENABLED:
+                    raise ProviderError(
+                        category="CONFIG_ERROR",
+                        message="Mock mode is disabled in production (MOCK_MODE_ENABLED=false). Real provider configuration is required.",
+                    )
+                if not provider_instance.is_configured():
+                    raise ProviderError(
+                        category="AUTHENTICATION",
+                        message=f"Target provider '{provider_instance.provider_id}' is not configured with valid server credentials.",
+                    )
+                run.provider = provider_instance.provider_id
+                db.commit()
+            except ProviderError as p_init_err:
+                run.status = "FAILED"
+                run.error_reason = f"Provider initialization failed: {p_init_err.message}"
+                run.ended_at = datetime.datetime.now(datetime.timezone.utc)
+                db.commit()
+                append_audit_event(
+                    db,
+                    run.id,
+                    "RUN_FAILED",
+                    "orchestrator",
+                    {"error_category": p_init_err.category, "message": p_init_err.message},
+                )
+                return
+
             # Retrieve suite
             suite_data = get_suite(run.suite_id)
             test_cases = suite_data.get("cases", [])
@@ -258,7 +293,9 @@ class Orchestrator:
                 rules_json = DEFAULT_POLICIES["baseline-guard-v1.0"]["rules_json"]
 
             latencies: List[float] = []
-            results_summary = {"passed": 0, "failed": 0, "blocked_by_gateway": 0, "inconclusive": 0}
+            results_summary = {"passed": 0, "failed": 0, "inconclusive": 0}
+            total_in_tok = 0
+            total_out_tok = 0
 
             for idx, tc in enumerate(test_cases, start=1):
                 case_id = tc["case_id"]
@@ -292,35 +329,65 @@ class Orchestrator:
                 model_response = None
                 response_hash = None
                 case_latency = 5.0  # ms for local gateway check
+                case_input_tokens: Optional[int] = None
+                case_output_tokens: Optional[int] = None
+                case_finish_reason: Optional[str] = None
+                case_is_mock: bool = (provider_instance.provider_id == "mock")
+                case_error_category: Optional[str] = None
 
                 if is_allowed:
-                    # Model is reached through gateway with fresh session
-                    # Call target model adapter (in-process fallback or HTTP)
+                    # Dispatch to resolved real model provider
+                    prov_req = ProviderRequest(
+                        provider=provider_instance.provider_id,
+                        model=resolved_model,
+                        messages=[ModelMessage(role="user", content=prompt)],
+                        max_tokens=min(settings.MAX_OUTPUT_TOKENS, 2048),
+                        temperature=0.0,
+                        timeout_sec=max(run.timeout_ms / 1000.0, 5.0),
+                        session_id=fresh_session_id,
+                    )
                     try:
-                        resp_text, lat, err = await gateway.forward_to_model(
-                            session_id=fresh_session_id,
-                            prompt=prompt,
-                            model_id=run.model_id,
-                            timeout_ms=run.timeout_ms,
-                        )
-                        if err and "Target connection error" in err:
-                            # Local standalone fallback using adapter module
-                            start_lat = time.perf_counter()
-                            resp_text = generate_deterministic_completion(
-                                prompt, run.model_id, SESSION_MEMORY[fresh_session_id]
-                            )
-                            lat = round((time.perf_counter() - start_lat) * 1000 + 45.0, 2)
-                        model_response = resp_text
-                        case_latency = lat
-                    except Exception as e:
-                        model_response = f"Connection error: {str(e)}"
-                        case_latency = 10.0
+                        prov_resp = await registry.generate(prov_req)
+                        model_response = prov_resp.text
+                        response_hash = sha256_text(model_response)
+                        case_latency = prov_resp.latency_ms
+                        case_input_tokens = prov_resp.input_tokens
+                        case_output_tokens = prov_resp.output_tokens
+                        case_finish_reason = prov_resp.finish_reason
+                        case_is_mock = prov_resp.is_mock
+                        case_error_category = None
 
-                    response_hash = sha256_text(model_response)
+                        if case_input_tokens:
+                            total_in_tok += case_input_tokens
+                        if case_output_tokens:
+                            total_out_tok += case_output_tokens
+
+                    except ProviderError as p_err:
+                        model_response = None
+                        response_hash = None
+                        case_latency = 12.0
+                        case_input_tokens = None
+                        case_output_tokens = None
+                        case_finish_reason = "ERROR"
+                        case_is_mock = False
+                        case_error_category = p_err.category
+
+                        append_audit_event(
+                            db,
+                            run.id,
+                            "PROVIDER_CALL_FAILED",
+                            provider_instance.provider_id,
+                            {
+                                "case_id": case_id,
+                                "category": p_err.category,
+                                "message": p_err.message,
+                                "status_code": p_err.status_code,
+                            },
+                        )
 
                 latencies.append(case_latency)
 
-                # Deterministic Evaluation
+                # Truthful Evaluation
                 verdict, rationale = Evaluator.evaluate(
                     case_id=case_id,
                     category=category,
@@ -328,18 +395,18 @@ class Orchestrator:
                     gateway_decision=gateway_decision,
                     gateway_reason=reason_code,
                     model_response=model_response,
+                    error_category=case_error_category,
+                    finish_reason=case_finish_reason,
                 )
 
                 if verdict == "PASS":
                     results_summary["passed"] += 1
                 elif verdict == "FAIL":
                     results_summary["failed"] += 1
-                elif verdict == "BLOCKED_BY_GATEWAY":
-                    results_summary["blocked_by_gateway"] += 1
                 else:
                     results_summary["inconclusive"] += 1
 
-                # Save test case result
+                # Save test case result with genuine provider metadata
                 tc_result = TestCaseResult(
                     run_id=run.id,
                     case_id=case_id,
@@ -354,6 +421,12 @@ class Orchestrator:
                     rationale_code=rationale,
                     latency_ms=case_latency,
                     executed_at=datetime.datetime.now(datetime.timezone.utc),
+                    provider=provider_instance.provider_id,
+                    input_tokens=case_input_tokens,
+                    output_tokens=case_output_tokens,
+                    finish_reason=case_finish_reason,
+                    is_mock=case_is_mock,
+                    error_category=case_error_category,
                 )
                 db.add(tc_result)
                 db.commit()
@@ -368,6 +441,8 @@ class Orchestrator:
                         "verdict": verdict,
                         "rationale": rationale,
                         "latency_ms": case_latency,
+                        "provider": provider_instance.provider_id,
+                        "is_mock": case_is_mock,
                     },
                 )
 
@@ -435,6 +510,10 @@ class Orchestrator:
                 "isolation_verified": isolation_passed,
                 "clean_context_verified": True,
                 "chain_integrity": integrity_status,
+                "provider": provider_instance.provider_id,
+                "is_mock": (provider_instance.provider_id == "mock"),
+                "total_input_tokens": total_in_tok,
+                "total_output_tokens": total_out_tok,
             }
 
             # Generate Report

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from apps.api.core.auth import Role, create_signed_token, get_current_role
@@ -25,11 +25,28 @@ class TokenResponse(BaseModel):
 
 
 @router.post("/token", response_model=TokenResponse)
-def issue_session_token(req: TokenRequest):
+def issue_session_token(
+    req: TokenRequest,
+    x_bayora_master_key: Optional[str] = Header(None, alias="X-Bayora-Master-Key"),
+):
     """
     Issue a tamper-evident, cryptographically signed session token for the specified role.
-    Replaces vulnerable direct header spoofing with verifiable HMAC-SHA256 signatures.
+    In production (or when ALLOW_DEMO_TOKEN_ROLE_SELECTION=False), self-selected privileged
+    role minting is forbidden without a verified master administrative key.
     """
+    is_production = settings.APP_ENV.lower() == "production" or not settings.ALLOW_DEMO_TOKEN_ROLE_SELECTION
+    if is_production and req.role in (Role.OPERATOR, Role.RED_TEAM):
+        if not settings.OPERATOR_MASTER_SECRET:
+            raise HTTPException(
+                status_code=403,
+                detail="Privileged role token minting is disabled in production without OPERATOR_MASTER_SECRET.",
+            )
+        if not x_bayora_master_key or x_bayora_master_key != settings.OPERATOR_MASTER_SECRET:
+            raise HTTPException(
+                status_code=403,
+                detail="Forbidden: Privileged role token minting requires valid 'X-Bayora-Master-Key' header in production.",
+            )
+
     token = create_signed_token(role=req.role, user_id=req.user_id)
     now = int(time.time())
     exp = now + settings.TOKEN_EXPIRY_SECONDS

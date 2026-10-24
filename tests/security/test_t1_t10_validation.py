@@ -119,7 +119,8 @@ def test_t6_policy_enforcement():
 def test_t7_ledger_integrity_and_tamper_drill():
     """T7: Verify complete chain, then modify disposable event copy and verify again."""
     runs = client.get("/api/runs").json()
-    run_id = runs[0]["id"]
+    completed = [r for r in runs if r.get("status") == "COMPLETED"]
+    run_id = completed[0]["id"] if completed else runs[0]["id"]
 
     # 1. Stored chain verifies 100%
     res_verify = client.post(f"/api/runs/{run_id}/verify")

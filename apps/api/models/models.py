@@ -41,6 +41,7 @@ class TestRun(Base):
     
     evaluator_version = Column(String(32), nullable=False, default="bayora-eval-v1")
     config_hash = Column(String(64), nullable=False)
+    provider = Column(String(64), nullable=True, default=None)
     
     request_budget = Column(Integer, default=20)
     timeout_ms = Column(Integer, default=5000)
@@ -93,6 +94,14 @@ class TestCaseResult(Base):
     rationale_code = Column(String(128), nullable=True)
     latency_ms = Column(Float, default=0.0)
     executed_at = Column(DateTime, default=get_utc_now)
+
+    # Real LLM Provider Execution Evidence & Metrics
+    provider = Column(String(64), nullable=True, default=None)
+    input_tokens = Column(Integer, nullable=True, default=None)
+    output_tokens = Column(Integer, nullable=True, default=None)
+    finish_reason = Column(String(64), nullable=True, default=None)
+    is_mock = Column(Boolean, nullable=True, default=False)
+    error_category = Column(String(64), nullable=True, default=None)
 
     run = relationship("TestRun", back_populates="test_cases")
 

@@ -32,15 +32,27 @@ class PolicyResponse(BaseModel):
     policy_hash: str
 
 
+class ModelInfoResponse(BaseModel):
+    id: str
+    provider: str
+    name: str
+    description: str
+    is_mock: bool
+    available: bool
+
+
 class RunCreate(BaseModel):
     suite_id: str = Field(default="bayora-adv-safety-v1")
     suite_version: str = Field(default="1.0.0")
     model_id: str = Field(default="mock-deterministic-v1")
     model_version: str = Field(default="v1")
+    provider: Optional[str] = Field(default=None, description="Optional provider identifier ('mock', 'openai', 'gemini')")
     policy_id: str = Field(default="baseline-guard-v1.0")
     policy_version: str = Field(default="1.0.0")
     request_budget: int = Field(default=20, ge=1, le=100)
-    timeout_ms: int = Field(default=5000, ge=500, le=30000)
+    timeout_ms: int = Field(default=5000, ge=500, le=60000)
+    temperature: Optional[float] = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(default=1024, ge=1, le=4096)
 
 
 class TestCaseResponse(BaseModel):
@@ -59,6 +71,13 @@ class TestCaseResponse(BaseModel):
     rationale_code: Optional[str] = None
     latency_ms: float
     executed_at: datetime.datetime
+    # Real Provider Metadata
+    provider: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    finish_reason: Optional[str] = None
+    is_mock: Optional[bool] = False
+    error_category: Optional[str] = None
 
 
 class AuditEventResponse(BaseModel):
@@ -98,6 +117,7 @@ class RunResponse(BaseModel):
     suite_hash: str
     model_id: str
     model_version: str
+    provider: Optional[str] = None
     policy_id: str
     policy_version: str
     policy_hash: str

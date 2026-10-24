@@ -15,7 +15,7 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
-import { api, type PolicyResponse } from "../../lib/api";
+import { api, type PolicyResponse, type ModelInfo } from "../../lib/api";
 import { useRole } from "../../lib/role-context";
 import { Button } from "../../components/ui/button";
 import {
@@ -56,22 +56,40 @@ const SUITES = [
   },
 ];
 
-const MODELS = [
+const FALLBACK_MODELS: ModelInfo[] = [
+  {
+    id: "gpt-4o",
+    provider: "openai",
+    name: "GPT-4o (OpenAI Compatible)",
+    description: "Production OpenAI flagship multimodal model for adversarial safety testing.",
+    is_mock: false,
+    available: false,
+  },
+  {
+    id: "gemini-1.5-pro",
+    provider: "gemini",
+    name: "Gemini 1.5 Pro (Google DeepMind)",
+    description: "Native Google Gemini multimodal reasoning model evaluated via developer API.",
+    is_mock: false,
+    available: false,
+  },
   {
     id: "mock-deterministic-v1",
+    provider: "mock",
     name: "Deterministic Baseline Model",
-    version: "v1",
     description:
-      "A standard baseline target model that complies with benign requests but lacks inherent prompt-injection guardrails. Perfect for validating policy gateway mediation efficacy.",
-    behavior: "Refuses obvious attacks, complies with mixed instructions",
+      "Standard deterministic mock target complying with benign requests and refusing obvious attacks.",
+    is_mock: true,
+    available: true,
   },
   {
     id: "mock-adversarial-weak-v1",
+    provider: "mock",
     name: "Adversarial Weak Model Profile",
-    version: "v1",
     description:
-      "Simulates an unguarded model highly susceptible to jailbreaks, instruction overrides, and roleplay bypasses. Validates that the policy gateway acts as a hard defense line.",
-    behavior: "Readily adopts DAN / developer personas if not blocked by gateway",
+      "Simulates an unguarded model susceptible to jailbreaks, validating gateway mediation.",
+    is_mock: true,
+    available: true,
   },
 ];
 
@@ -81,6 +99,8 @@ function NewRunWizard() {
 
   const [policies, setPolicies] = useState<PolicyResponse[]>([]);
   const [loadingPolicies, setLoadingPolicies] = useState(true);
+  const [models, setModels] = useState<ModelInfo[]>(FALLBACK_MODELS);
+  const [loadingModels, setLoadingModels] = useState(true);
 
   // Form state
   const [suiteId, setSuiteId] = useState("bayora-adv-safety-v1");
@@ -106,12 +126,28 @@ function NewRunWizard() {
       } finally {
         setLoadingPolicies(false);
       }
+
+      try {
+        setLoadingModels(true);
+        const modelData = await api.getModels();
+        if (modelData && modelData.length > 0) {
+          setModels(modelData);
+          if (!modelData.some((m) => m.id === modelId)) {
+            const firstAvail = modelData.find((m) => m.available) || modelData[0];
+            if (firstAvail) setModelId(firstAvail.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load models:", err);
+      } finally {
+        setLoadingModels(false);
+      }
     }
     load();
   }, []);
 
   const selectedSuite = SUITES.find((s) => s.id === suiteId) ?? SUITES[0]!;
-  const selectedModel = MODELS.find((m) => m.id === modelId) ?? MODELS[0]!;
+  const selectedModel = models.find((m) => m.id === modelId) ?? models[0]!;
   const selectedPolicy = policies.find((p) => p.id === policyId) || {
     id: policyId,
     name: policyId,
@@ -127,6 +163,12 @@ function NewRunWizard() {
 
     if (isSubmitting) return;
 
+    if (!selectedModel.available) {
+      toast.warning(
+        `Selected model ${selectedModel.id} is not configured on the server. Configure API keys in server .env or pick an available provider.`,
+      );
+    }
+
     try {
       setIsSubmitting(true);
       toast.info("Creating evaluation with frozen configuration...");
@@ -136,9 +178,10 @@ function NewRunWizard() {
         suite_id: suiteId,
         suite_version: selectedSuite.version,
         model_id: modelId,
-        model_version: selectedModel.version,
+        model_version: "v1",
         policy_id: policyId,
         policy_version: selectedPolicy.version,
+        provider: selectedModel.provider,
         request_budget: requestBudget,
         timeout_ms: timeoutMs,
       });
@@ -278,32 +321,64 @@ function NewRunWizard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {MODELS.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => setModelId(m.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                    modelId === m.id
-                      ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-xs ring-2 ring-indigo-500/20"
-                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm text-slate-900 dark:text-white">
-                      {m.name}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] font-mono">
-                      {m.id}
-                    </Badge>
+            {loadingModels ? (
+              <div className="p-8 text-center text-slate-500">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />
+                Querying server model registry...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {models.map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => setModelId(m.id)}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      modelId === m.id
+                        ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-xs ring-2 ring-indigo-500/20"
+                        : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">
+                          {m.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] uppercase font-mono ${
+                            m.provider === "openai"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300"
+                              : m.provider === "gemini"
+                                ? "bg-sky-50 text-sky-700 border-sky-300 dark:bg-sky-950/30 dark:text-sky-300"
+                                : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300"
+                          }`}
+                        >
+                          {m.provider}
+                        </Badge>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        {m.id}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed mb-3">{m.description}</p>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                      <span className="text-slate-400">
+                        {m.is_mock ? "Deterministic Mock" : "Production LLM"}
+                      </span>
+                      {m.available ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" /> Key Required
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed mb-3">{m.description}</p>
-                  <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md">
-                    <strong>Simulated Behavior:</strong> {m.behavior}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={() => setStep(1)}>
@@ -490,8 +565,14 @@ function NewRunWizard() {
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[11px]">Target Model</span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedModel.id}
+                  <div className="flex items-center gap-1.5 font-mono font-semibold text-slate-800 dark:text-slate-200">
+                    <span>{selectedModel.id}</span>
+                    <Badge variant="outline" className="text-[9px] uppercase px-1 py-0">
+                      {selectedModel.provider}
+                    </Badge>
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    {selectedModel.is_mock ? "Mock Simulator" : "Live Model"}
                   </span>
                 </div>
                 <div>

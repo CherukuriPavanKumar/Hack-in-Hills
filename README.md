@@ -141,20 +141,40 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 2. Install Web frontend dependencies
+# 2. Configure Environment (.env)
+cp .env.example .env
+# Edit .env with your keys if testing real frontier models:
+# OPENAI_API_KEY=sk-...
+# GEMINI_API_KEY=...
+# Or set MOCK_MODE_ENABLED=true for offline deterministic testing.
+
+# 3. Install Web frontend dependencies
 cd apps/web && npm install && cd ../..
 
-# 3. Run automated tests
-pytest -v tests/           # All 46 backend tests
-cd apps/web && npm test    # All 17 frontend tests
+# 4. Run automated tests
+pytest -v tests/           # All 71 backend security, unit, provider & integration tests
+cd apps/web && npm test    # All 17 frontend logic & routing tests
 
-# 4. Launch local development servers (Backend: 8000, Frontend: 3000)
+# 5. Launch local development servers (Backend: 8000, Frontend: 3000)
 # Linux / macOS:
 ./scripts/dev.sh
 
 # Windows PowerShell:
 powershell -ExecutionPolicy Bypass ./scripts/dev.ps1
 ```
+
+---
+
+## Model Providers & Inference Architecture (Phase 1)
+
+BAYORA includes a typed, provider-agnostic inference layer (`services/providers/`):
+
+- **OpenAI-Compatible Chat Completions:** Native support for `gpt-4o`, `gpt-4o-mini`, `o3-mini`, self-hosted vLLM, and local Ollama (`http://localhost:11434/v1`).
+- **Google Gemini:** Native async support for `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-pro` with safety block normalization.
+- **Deterministic Mock Simulator:** High-speed offline mock provider for local development, CI/CD, and regression testing without cloud costs.
+- **SSRF Hardening:** Strict server-side IP address and DNS inspection (`services/providers/ssrf.py`) blocking loopback (127.0.0.0/8), RFC1918 private subnets (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), and cloud metadata endpoints (169.254.169.254).
+- **Truthful Evaluator (`bayora-eval-v2.0`):** Replaces naive substring scoring with an evidence-based evaluation engine distinguishing gateway policy enforcement, model safety refusals, credential leaks, prompt injections, and provider infrastructure errors (`INCONCLUSIVE`).
+- **Cryptographic Hash Chain:** Audit events record full input/output token metrics, provider identity, finish reasons, and execution metadata without leaking API secrets.
 
 ---
 
@@ -199,7 +219,7 @@ powershell -ExecutionPolicy Bypass ./scripts/dev.ps1
 - **Database:** PostgreSQL 16 (with SQLite local fallback).
 - **Integrity:** SHA-256 Canonical JSON Hash-Chained Audit Ledger.
 - **Isolation:** Docker Compose with 4 named networks (`control-net`, `red-net`, `blue-net`, `model-net`).
-- **Testing:** Pytest (46 tests), Vitest (17 tests), TypeScript type check (0 errors), ESLint (0 errors).
+- **Testing:** Pytest (71 backend tests across security, provider contracts, truthful evaluation, unit, and integration suites), Vitest (17 frontend tests), TypeScript type check (0 errors), ESLint (0 errors).
 
 ---
 

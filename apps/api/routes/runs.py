@@ -37,6 +37,9 @@ from apps.api.schemas.schemas import (
     VerifyResponse,
 )
 from services.orchestrator import Orchestrator, append_audit_event
+from services.providers.base import ProviderError
+from services.providers.registry import get_provider_registry
+from apps.api.core.config import settings
 from workers.blue_policy.default_policies import (
     DEFAULT_POLICIES,
     compute_policy_hash,
@@ -60,6 +63,26 @@ def create_run(
     Validate config and create a new run with unique ID and frozen metadata.
     Restricted to Operator and Red Team roles.
     """
+    # 1. Validate Provider & Model Availability
+    registry = get_provider_registry()
+    try:
+        provider_inst, resolved_model = registry.resolve_provider_and_model(
+            model_id=req.model_id,
+            provider_id=req.provider,
+        )
+        if provider_inst.provider_id == "mock" and not settings.MOCK_MODE_ENABLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Mock mode is disabled in production (MOCK_MODE_ENABLED=false). Please select a configured real provider model.",
+            )
+        if not provider_inst.is_configured():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Selected model '{req.model_id}' requires provider '{provider_inst.provider_id}' which is not configured with valid server credentials.",
+            )
+    except ProviderError as pe:
+        raise HTTPException(status_code=400, detail=pe.message)
+
     suite_data = get_suite(req.suite_id)
     suite_hash = compute_suite_hash(suite_data)
 
@@ -82,6 +105,7 @@ def create_run(
         "suite_version": req.suite_version,
         "model_id": req.model_id,
         "model_version": req.model_version,
+        "provider": provider_inst.provider_id,
         "policy_id": req.policy_id,
         "policy_version": req.policy_version,
         "request_budget": req.request_budget,
@@ -99,10 +123,11 @@ def create_run(
         suite_hash=suite_hash,
         model_id=req.model_id,
         model_version=req.model_version,
+        provider=provider_inst.provider_id,
         policy_id=req.policy_id,
         policy_version=req.policy_version,
         policy_hash=p_hash,
-        evaluator_version="bayora-eval-v1.0",
+        evaluator_version="bayora-eval-v2.0",
         config_hash=config_hash,
         request_budget=req.request_budget,
         timeout_ms=req.timeout_ms,
@@ -369,6 +394,7 @@ def get_run_report(
                 "suite_id": run.suite_id,
                 "suite_version": run.suite_version,
                 "suite_hash": run.suite_hash,
+                "provider": run.provider or report.summary_json.get("provider", "mock"),
                 "model_id": run.model_id,
                 "model_version": run.model_version,
                 "policy_id": run.policy_id,
@@ -401,6 +427,7 @@ def get_run_report(
         "",
         "## 1. Tested Configuration & Pinned Versions",
         f"- **Benchmark Suite**: `{run.suite_id}` (v{run.suite_version}) — SHA256: `{run.suite_hash[:16]}...`",
+        f"- **Model Provider**: `{run.provider or report.summary_json.get('provider', 'mock')}`",
         f"- **Target Model Profile**: `{run.model_id}` (v{run.model_version})",
         f"- **Defense Policy**: `{run.policy_id}` (v{run.policy_version}) — SHA256: `{run.policy_hash[:16]}...`",
         f"- **Evaluator**: `{run.evaluator_version}`",
@@ -425,6 +452,8 @@ def get_run_report(
         f"- **Inconclusive**: {report.summary_json.get('inconclusive', 0)}",
         f"- **Median Latency (p50)**: {report.summary_json.get('p50_latency_ms', 0)}ms",
         f"- **95th Percentile (p95)**: {report.summary_json.get('p95_latency_ms', 0)}ms",
+        f"- **Total Input Tokens**: {report.summary_json.get('total_input_tokens', 0)}",
+        f"- **Total Output Tokens**: {report.summary_json.get('total_output_tokens', 0)}",
         "",
         "## 4. Residual Risks & Stated Limitations",
     ])

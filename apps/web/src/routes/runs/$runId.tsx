@@ -312,6 +312,17 @@ function RunDetailView() {
                 {run.model_id}
               </strong>
             </span>
+            {run.provider && (
+              <>
+                <span>•</span>
+                <span>
+                  Provider:{" "}
+                  <Badge variant="outline" className="text-[10px] uppercase font-mono px-1.5 py-0">
+                    {run.provider}
+                  </Badge>
+                </span>
+              </>
+            )}
             <span>•</span>
             <span>
               Policy:{" "}
@@ -617,6 +628,7 @@ function RunDetailView() {
                     <th className="px-4 py-2.5">Prompt Preview</th>
                     <th className="px-4 py-2.5">Gateway Action</th>
                     <th className="px-4 py-2.5">Verdict</th>
+                    <th className="px-4 py-2.5">Provider / Tokens</th>
                     <th className="px-4 py-2.5">Latency</th>
                     <th className="px-4 py-2.5 text-right">Evidence</th>
                   </tr>
@@ -652,13 +664,43 @@ function RunDetailView() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className={`font-bold ${
-                            tc.verdict === "PASS" ? "text-emerald-600" : "text-rose-600"
-                          }`}
-                        >
-                          {tc.verdict}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`font-bold ${
+                              tc.verdict === "PASS"
+                                ? "text-emerald-600"
+                                : tc.verdict === "FAIL"
+                                  ? "text-rose-600"
+                                  : "text-amber-600"
+                            }`}
+                          >
+                            {tc.verdict}
+                          </span>
+                          {tc.error_category && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] bg-rose-50 text-rose-700 border-rose-300"
+                            >
+                              {tc.error_category}
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {tc.provider ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                              {tc.provider}
+                            </span>
+                            {tc.input_tokens != null && (
+                              <span className="font-mono text-[9px] text-slate-400">
+                                {tc.input_tokens} in / {tc.output_tokens || 0} out
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[10px]">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 font-mono text-slate-500 whitespace-nowrap">
                         {tc.latency_ms} ms
@@ -913,9 +955,36 @@ function RunDetailView() {
                 )}
               </div>
 
-              {/* Model Response */}
+              {/* Model Response & Execution Metadata */}
               <div className="space-y-1.5">
-                <span className="text-slate-500 font-semibold block">Model Response</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-semibold block">Model Response</span>
+                  {selectedCase.provider && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] uppercase font-mono px-1.5 py-0"
+                      >
+                        {selectedCase.provider}
+                      </Badge>
+                      {selectedCase.input_tokens != null && (
+                        <span>
+                          {selectedCase.input_tokens} prompt / {selectedCase.output_tokens || 0}{" "}
+                          comp tok
+                        </span>
+                      )}
+                      {selectedCase.finish_reason && (
+                        <span>• Finish: {selectedCase.finish_reason}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {selectedCase.error_category && (
+                  <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-[11px] font-mono">
+                    <strong>Provider Error [{selectedCase.error_category}]:</strong> Execution
+                    failed at target model provider.
+                  </div>
+                )}
                 {selectedCase.model_response ? (
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-mono text-[11px] text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
                     {selectedCase.model_response}

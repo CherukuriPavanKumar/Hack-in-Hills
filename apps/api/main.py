@@ -14,20 +14,53 @@ from apps.api.models.models import (
     TestCaseResult,
     TestRun,
 )
-from apps.api.routes import auth, diff, health, policies, probes, runs
+from apps.api.routes import auth, diff, health, models, policies, probes, runs
 from services.orchestrator import append_audit_event
 from workers.blue_policy.default_policies import (
     DEFAULT_POLICIES,
     compute_policy_hash,
 )
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bayora")
 
 
+def ensure_schema_migrations():
+    """Ensure newly added columns exist in existing database tables."""
+    try:
+        with engine.connect() as conn:
+            if engine.dialect.name == "sqlite":
+                # Check test_case_results columns
+                result = conn.execute(text("PRAGMA table_info(test_case_results);"))
+                existing_cols = {row[1] for row in result.fetchall()}
+                new_tc_cols = [
+                    ("provider", "VARCHAR(64)"),
+                    ("input_tokens", "INTEGER"),
+                    ("output_tokens", "INTEGER"),
+                    ("finish_reason", "VARCHAR(64)"),
+                    ("is_mock", "BOOLEAN DEFAULT 0"),
+                    ("error_category", "VARCHAR(64)"),
+                ]
+                for col_name, col_type in new_tc_cols:
+                    if col_name not in existing_cols:
+                        conn.execute(text(f"ALTER TABLE test_case_results ADD COLUMN {col_name} {col_type};"))
+
+                # Check test_runs columns
+                run_res = conn.execute(text("PRAGMA table_info(test_runs);"))
+                existing_run_cols = {row[1] for row in run_res.fetchall()}
+                if "provider" not in existing_run_cols:
+                    conn.execute(text("ALTER TABLE test_runs ADD COLUMN provider VARCHAR(64);"))
+
+                conn.commit()
+    except Exception as e:
+        logger.warning(f"Database schema migration check notice: {e}")
+
+
 def init_db_and_seed():
     """Ensure database schema and initial seed data exist."""
     Base.metadata.create_all(bind=engine)
+    ensure_schema_migrations()
     db = SessionLocal()
     try:
         # Seed policies
@@ -215,6 +248,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(health.router, prefix=settings.API_PREFIX)
+app.include_router(models.router, prefix=settings.API_PREFIX)
 app.include_router(runs.router, prefix=settings.API_PREFIX)
 app.include_router(policies.router, prefix=settings.API_PREFIX)
 app.include_router(probes.router, prefix=settings.API_PREFIX)

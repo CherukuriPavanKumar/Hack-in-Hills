@@ -89,6 +89,15 @@ export interface ScoreSummary {
   chain_integrity?: string;
 }
 
+export interface ModelInfo {
+  id: string;
+  provider: string;
+  name: string;
+  description: string;
+  is_mock: boolean;
+  available: boolean;
+}
+
 export interface TestCaseResult {
   id: string;
   case_id: string;
@@ -103,6 +112,12 @@ export interface TestCaseResult {
   rationale_code?: string;
   latency_ms: number;
   executed_at: string;
+  provider?: string;
+  input_tokens?: number | null;
+  output_tokens?: number | null;
+  finish_reason?: string | null;
+  is_mock?: boolean;
+  error_category?: string | null;
 }
 
 export type TestCaseResponse = TestCaseResult;
@@ -128,6 +143,7 @@ export interface ProbesExecuteResponse {
 export interface RunResponse {
   id: string;
   status: string;
+  provider?: string;
   suite_id: string;
   suite_version: string;
   suite_hash: string;
@@ -262,6 +278,15 @@ export const api = {
     return (await res.json()) as RunResponse;
   },
 
+  async getModels(): Promise<ModelInfo[]> {
+    const res = await fetch(`${API_BASE}/models`, {
+      headers: await authHeaders(),
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Failed to fetch models");
+    return (await res.json()) as ModelInfo[];
+  },
+
   async createRun(payload: {
     suite_id: string;
     suite_version: string;
@@ -269,6 +294,9 @@ export const api = {
     model_version: string;
     policy_id: string;
     policy_version: string;
+    provider?: string;
+    temperature?: number;
+    max_tokens?: number;
     request_budget?: number;
     timeout_ms?: number;
   }): Promise<RunResponse> {
